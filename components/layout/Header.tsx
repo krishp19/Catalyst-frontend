@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun } from 'lucide-react';
+import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image, Users, Star, LogOut } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -12,38 +12,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
+import { logout } from '../../src/store/features/auth/authSlice';
 import { LoginModal } from '../../components/auth/LoginModal';
 import { SignupModal } from '../../components/auth/SignupModal';
 import { useTheme } from 'next-themes';
 import { cn } from '../../lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { MobileSidebar } from './MobileSidebar';
+import defaultAvatar from '../../assets/avatar.webp';
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated } = useAppSelector((state: any) => state.auth);
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
+  const dispatch = useAppDispatch();
   
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center h-14 px-4 md:px-6">
-          {/* Mobile Menu Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden mr-2">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[300px]">
-              <MobileSidebar />
-            </SheetContent>
-          </Sheet>
-
           {/* Logo */}
           <div className="flex items-center">
             <a href="/" className="flex items-center">
@@ -71,17 +61,6 @@ const Header = () => {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2 md:gap-4 ml-auto">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-              className="hidden md:flex"
-            >
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <MessageSquare className="h-5 w-5" />
             </Button>
@@ -90,12 +69,12 @@ const Header = () => {
               <Bell className="h-5 w-5" />
             </Button>
 
-            {user ? (
+            {isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 p-1 md:p-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.username} />
+                      <AvatarImage src={user.avatar || defaultAvatar} alt={user.username} />
                       <AvatarFallback>{user.username[0]}</AvatarFallback>
                     </Avatar>
                     <div className="hidden md:flex flex-col items-start">
@@ -105,10 +84,10 @@ const Header = () => {
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem className="flex items-center">
-                    <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage src={user.avatar} alt={user.username} />
+                <DropdownMenuContent align="end" className="w-56 p-2 bg-background border rounded-md shadow-lg">
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatar || defaultAvatar} alt={user.username} />
                       <AvatarFallback>{user.username[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
@@ -116,11 +95,36 @@ const Header = () => {
                       <span className="text-xs text-muted-foreground">{user.karma} karma</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <User className="h-4 w-4" />
+                    <span>Edit Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => window.location.href = '/profile'}>
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Image className="h-4 w-4" />
+                    <span>Edit Avatar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Users className="h-4 w-4" />
+                    <span>Manage Community</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Star className="h-4 w-4" />
+                    <span>Premium</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                    {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => dispatch(logout())}>
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginUser, clearError } from '@/store/features/auth/authSlice';
 import { useToast } from '../../hooks/use-toast';
-import { useAuth } from '../../contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -48,7 +47,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const { isLoading, error } = useAppSelector((state: any) => state.auth);
-  const { setIsSignupModalOpen } = useAuth();
   
   const [isOpen, setIsOpen] = React.useState(false);
   
@@ -73,7 +71,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         title: 'Success',
         description: 'You have been successfully logged in!',
       });
-      setIsOpen(false);
+      setOpen(false);
+      form.reset();
     }
   };
 
@@ -94,9 +93,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (externalSignupClick) {
       externalSignupClick();
     } else {
-      setIsSignupModalOpen(true);
+      dispatch({ type: 'OPEN_SIGNUP_MODAL' });
     }
-  }, [setOpen, externalSignupClick, setIsSignupModalOpen]);
+  }, [setOpen, externalSignupClick, dispatch]);
   
   // Handle modal state changes
   const handleOpenChange = useCallback((newOpen: boolean) => {

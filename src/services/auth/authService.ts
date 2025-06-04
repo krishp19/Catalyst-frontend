@@ -39,6 +39,12 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface UpdateProfileData {
+  bio?: string;
+  avatarUrl?: string;
+  email?: string;
+}
+
 export const authService = {
   async signup(data: SignupData): Promise<ApiResponse<AuthResponse>> {
     try {
@@ -64,6 +70,36 @@ export const authService = {
       return {
         error: {
           message: error.message || 'Failed to log in',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async getProfile(): Promise<ApiResponse<User>> {
+    try {
+      const response = await httpClient.get<User>('/api/users/profile');
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Get profile error:', error);
+      return {
+        error: {
+          message: error.message || 'Failed to fetch profile',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async updateProfile(data: UpdateProfileData): Promise<ApiResponse<User>> {
+    try {
+      const response = await httpClient.patch<User>('/api/users/profile', data);
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      return {
+        error: {
+          message: error.message || 'Failed to update profile',
           status: error.response?.status,
         },
       };

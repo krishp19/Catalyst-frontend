@@ -1,4 +1,5 @@
 import { API_BASE_URL, DEFAULT_HEADERS } from './config';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
 export interface ApiResponse<T> {
   data: T;
@@ -112,4 +113,32 @@ export class HttpClient {
   }
 }
 
-export const httpClient = new HttpClient();
+const httpClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Function to get the token from localStorage
+const getToken = () => {
+  const persistRoot = localStorage.getItem('persist:root');
+  if (persistRoot) {
+    const { auth } = JSON.parse(persistRoot);
+    const authState = JSON.parse(auth);
+    return authState.accessToken;
+  }
+  return null;
+};
+
+// Add a request interceptor to include the auth token in the Authorization header
+httpClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getToken();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export { httpClient };
