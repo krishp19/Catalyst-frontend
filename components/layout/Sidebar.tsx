@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '../../lib/utils';
 import { Home, TrendingUp as Trending, Rocket, Gamepad2, Music, Film, BookOpen, Image, Users, Plus, Sparkles, Clock, Award, Heart, Zap, Star, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
 import { Separator } from '../../components/ui/separator';
@@ -23,18 +24,18 @@ interface SidebarItemProps {
 
 const SidebarItem = ({ icon, label, href, active }: SidebarItemProps) => {
   return (
-    <a 
+    <Link 
       href={href}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
         active 
-          ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium" 
-          : "hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400"
+          ? "bg-accent text-accent-foreground" 
+          : "hover:bg-accent hover:text-accent-foreground"
       )}
     >
       {icon}
       <span>{label}</span>
-    </a>
+    </Link>
   );
 };
 
@@ -116,7 +117,7 @@ const Sidebar = () => {
     return (
       <div className="space-y-1">
         {joinedCommunities.map((community) => (
-          <a
+          <Link
             key={community.id}
             href={`/r/${community.name}`}
             className={cn(
@@ -136,7 +137,7 @@ const Sidebar = () => {
                 {community.memberCount.toLocaleString()} members
               </p>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
     );

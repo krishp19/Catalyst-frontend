@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -37,31 +38,19 @@ export const TopCommunities = () => {
 
   const handleJoin = async (communityId: string) => {
     if (!isAuthenticated) {
-      toast.error('Please log in to join communities', {
-        description: 'You need to be logged in to join a community.',
-      });
+      setIsLoginModalOpen(true);
       return;
     }
 
     setJoiningId(communityId);
     try {
-      const response = await communityService.joinCommunity(communityId);
-      toast.success(response.message || 'Successfully joined the community!');
-      await fetchCommunities();
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        toast.error('Please log in to join communities', {
-          description: 'You need to be logged in to join a community.',
-        });
-      } else if (error.response?.status === 409) {
-        toast.error(error.response.data.message || 'Already a member', {
-          description: 'You are already a member of this community.',
-        });
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to join community', {
-          description: 'An error occurred while trying to join the community.',
-        });
-      }
+      await communityService.joinCommunity(communityId);
+      toast.success('Successfully joined the community');
+      // Refresh the communities list
+      fetchCommunities();
+    } catch (error) {
+      toast.error('Failed to join community');
+      console.error('Error joining community:', error);
     } finally {
       setJoiningId(null);
     }
@@ -78,7 +67,17 @@ export const TopCommunities = () => {
           <CardTitle className="text-base">Top Growing Communities</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="p-4 text-center text-muted-foreground">Loading...</div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-16 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
@@ -91,7 +90,7 @@ export const TopCommunities = () => {
           <CardTitle className="text-base">Top Growing Communities</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="p-4 text-center text-destructive">{error}</div>
+          <p className="text-sm text-muted-foreground">{error}</p>
         </CardContent>
       </Card>
     );
@@ -107,7 +106,7 @@ export const TopCommunities = () => {
         <ul className="divide-y">
           {communities.map((community, index) => (
             <li key={community.id} className="p-3 hover:bg-muted/50 transition-colors">
-              <a href={`/r/${community.name}`} className="flex items-center gap-3">
+              <Link href={`/r/${community.name}`} className="flex items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground w-6">
                   {index + 1}
                 </span>
@@ -136,7 +135,7 @@ export const TopCommunities = () => {
                 >
                   {joiningId === community.id ? 'Joining...' : 'Join'}
                 </Button>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

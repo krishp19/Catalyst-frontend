@@ -1,14 +1,29 @@
+import axios from 'axios';
 import { httpClient } from '../lib/api/httpClient';
 
 export interface Community {
   id: string;
   name: string;
   description: string;
-  iconUrl: string;
   bannerUrl: string;
+  iconUrl: string;
   memberCount: number;
+  creatorId: string;
   createdAt: string;
   updatedAt: string;
+  creator: {
+    id: string;
+    username: string;
+    email: string;
+    bio: string;
+    avatarUrl: string;
+    reputationScore: number;
+    postScore: number;
+    commentScore: number;
+    communityScore: number;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 export interface ApiResponse<T> {
@@ -31,33 +46,31 @@ export interface ApiErrorResponse {
 class CommunityService {
   private baseUrl = '/api/communities';
 
-  async getCommunities(page = 1, limit = 5): Promise<ApiResponse<Community>> {
-    const response = await httpClient.get<ApiResponse<Community>>(this.baseUrl, {
-      params: { page, limit }
-    });
+  async getCommunities(page = 1, limit = 10): Promise<ApiResponse<Community>> {
+    const response = await httpClient.get(`${this.baseUrl}?page=${page}&limit=${limit}`);
     return response.data;
   }
 
   async getCommunityByName(name: string): Promise<Community> {
-    const response = await httpClient.get<Community>(`${this.baseUrl}/${name}`);
+    const response = await httpClient.get(`${this.baseUrl}/${name}`);
     return response.data;
   }
 
-  async joinCommunity(communityId: string): Promise<{ message: string }> {
+  async joinCommunity(communityId: string): Promise<void> {
+    await httpClient.post(`${this.baseUrl}/${communityId}/join`);
+  }
+
+  async leaveCommunity(communityId: string): Promise<void> {
+    await httpClient.post(`${this.baseUrl}/${communityId}/leave`);
+  }
+
+  async isMember(communityId: string): Promise<boolean> {
     try {
-      const response = await httpClient.post<{ message: string }>(`${this.baseUrl}/${communityId}/join`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.data) {
-        throw error;
-      }
-      throw new Error('Failed to join community');
+      const response = await httpClient.get(`${this.baseUrl}/${communityId}/is-member`);
+      return response.data.isMember;
+    } catch (error) {
+      return false;
     }
-  }
-
-  async leaveCommunity(communityId: string): Promise<{ message: string }> {
-    const response = await httpClient.delete<{ message: string }>(`${this.baseUrl}/${communityId}/leave`);
-    return response.data;
   }
 
   async getCommunityMembers(communityId: string, page = 1, limit = 10) {
@@ -68,9 +81,7 @@ class CommunityService {
   }
 
   async getJoinedCommunities(page = 1, limit = 10): Promise<ApiResponse<Community>> {
-    const response = await httpClient.get<ApiResponse<Community>>(`${this.baseUrl}/user/joined`, {
-      params: { page, limit }
-    });
+    const response = await httpClient.get(`${this.baseUrl}/user/joined?page=${page}&limit=${limit}`);
     return response.data;
   }
 }

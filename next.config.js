@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -8,6 +7,14 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: 'dtvydrk6x',
     NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: 'profile-avatars',
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3000/api/:path*',
+      },
+    ];
   },
 };
 
