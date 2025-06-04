@@ -1,9 +1,9 @@
 import React from 'react';
-import Sidebar from '@/components/layout/Sidebar';
-import { PostList } from '@/components/posts/PostList';
-import { CreatePostBox } from '@/components/posts/CreatePostBox';
-import { CommunityInfo } from '@/components/communities/CommunityInfo';
-import { TopCommunities } from '@/components/communities/TopCommunities';
+import Sidebar from '../components/layout/Sidebar';
+import { PostList } from '../components/posts/PostList';
+import { CreatePostBox } from '../components/posts/CreatePostBox';
+import { CommunityInfo } from '../components/communities/CommunityInfo';
+import { TopCommunities } from '../components/communities/TopCommunities';
 
 export default function Home() {
   return (

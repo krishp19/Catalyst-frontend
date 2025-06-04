@@ -1,18 +1,21 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loginUser, clearError } from '@/store/features/auth/authSlice';
+import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
 import {
   Form,
   FormControl,
@@ -20,48 +23,101 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from '../ui/form';
+import { Input } from '../ui/input';
 import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
-  username: z.string().min(3, {
-    message: 'Username must be at least 3 characters',
-  }),
-  password: z.string().min(6, {
-    message: 'Password must be at least 6 characters',
-  }),
+  usernameOrEmail: z.string().min(1, { message: 'Username or email is required' }),
+  password: z.string().min(1, { message: 'Password is required' }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export const LoginModal = () => {
-  const { isLoginModalOpen, setIsLoginModalOpen, login, isLoading, setIsSignupModalOpen } = useAuth();
+interface LoginModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSignupClick?: () => void;
+}
+
+export const LoginModal: React.FC<LoginModalProps> = ({
+  open: externalOpen,
+  onOpenChange: setExternalOpen,
+  onSignupClick: externalSignupClick,
+}) => {
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const { isLoading, error } = useAppSelector((state: any) => state.auth);
+  const { setIsSignupModalOpen } = useAuth();
+  
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  // Handle both controlled and uncontrolled open state
+  const isControlled = externalOpen !== undefined;
+  const open = isControlled ? externalOpen : isOpen;
+  const setOpen = isControlled ? setExternalOpen || (() => {}) : setIsOpen;
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      usernameOrEmail: '',
       password: '',
     },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    try {
-      await login(data.username, data.password);
-    } catch (error) {
-      console.error('Login error:', error);
+    const resultAction = await dispatch(loginUser(data));
+    
+    if (loginUser.fulfilled.match(resultAction)) {
+      toast({
+        title: 'Success',
+        description: 'You have been successfully logged in!',
+      });
+      setIsOpen(false);
     }
   };
 
-  const handleSignupClick = () => {
-    setIsLoginModalOpen(false);
-    setIsSignupModalOpen(true);
+  // Handle error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: error,
+        variant: 'destructive',
+      });
+      dispatch(clearError());
+    }
+  }, [error, toast, dispatch]);
+
+  const handleSignupClick = useCallback(() => {
+    setOpen(false);
+    if (externalSignupClick) {
+      externalSignupClick();
+    } else {
+      setIsSignupModalOpen(true);
+    }
+  }, [setOpen, externalSignupClick, setIsSignupModalOpen]);
+  
+  // Handle modal state changes
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) {
+      form.reset();
+    }
+    setOpen(newOpen);
+  }, [form, setOpen]);
+
+  type FormFieldProps = {
+    field: {
+      value: any;
+      onChange: (value: any) => void;
+      onBlur: () => void;
+      name: string;
+    };
   };
 
   return (
-    <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e: any) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-2xl">Log in to Catalyst</DialogTitle>
           <DialogDescription>
@@ -72,12 +128,12 @@ export const LoginModal = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="username"
-              render={({ field }) => (
+              name="usernameOrEmail"
+              render={({ field }: { field: any }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Username or Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your username" {...field} />
+                    <Input placeholder="Enter your username or email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -86,7 +142,7 @@ export const LoginModal = () => {
             <FormField
               control={form.control}
               name="password"
-              render={({ field }) => (
+              render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
@@ -96,7 +152,11 @@ export const LoginModal = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

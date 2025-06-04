@@ -2,28 +2,30 @@
 
 import React from 'react';
 import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
-import { LoginModal } from '@/components/auth/LoginModal';
-import { SignupModal } from '@/components/auth/SignupModal';
+} from '../ui/dropdown-menu';
+import { useAuth } from '../../contexts/AuthContext';
+import { LoginModal } from '../../components/auth/LoginModal';
+import { SignupModal } from '../../components/auth/SignupModal';
 import { useTheme } from 'next-themes';
-import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '../../lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { MobileSidebar } from './MobileSidebar';
 
 const Header = () => {
-  const { user, logout, setIsLoginModalOpen, setIsSignupModalOpen } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
   
   return (
     <>
@@ -132,7 +134,10 @@ const Header = () => {
                 </Button>
                 <Button 
                   size="sm"
-                  onClick={() => setIsSignupModalOpen(true)}
+                  onClick={() => {
+                    setIsLoginModalOpen(false);
+                    setIsSignupModalOpen(true);
+                  }}
                 >
                   Sign Up
                 </Button>
@@ -141,8 +146,22 @@ const Header = () => {
           </div>
         </div>
       </header>
-      <LoginModal />
-      <SignupModal />
+      <LoginModal 
+        open={isLoginModalOpen} 
+        onOpenChange={setIsLoginModalOpen}
+        onSignupClick={() => {
+          setIsLoginModalOpen(false);
+          setIsSignupModalOpen(true);
+        }}
+      />
+      <SignupModal 
+        open={isSignupModalOpen}
+        onOpenChange={setIsSignupModalOpen}
+        onLoginClick={() => {
+          setIsSignupModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
     </>
   );
 };

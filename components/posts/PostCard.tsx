@@ -13,10 +13,10 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { cn } from '../../lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import {
   DropdownMenu,
@@ -24,9 +24,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Post } from '@/lib/types';
-import { Card } from '@/components/ui/card';
+} from '../../components/ui/dropdown-menu';
+import { Post } from '../../lib/types';
+import { Card } from '../../components/ui/card';
 import Link from 'next/link';
 
 interface PostCardProps {

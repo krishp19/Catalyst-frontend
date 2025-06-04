@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { mockPosts } from '@/lib/mock-data';
-import { PostDetails } from '@/components/posts/PostDetails';
+import { mockPosts } from '../../lib/mock-data';
+import { PostDetails } from '../../components/posts/PostDetails';
 import { CommentSection } from '@/components/comments/CommentSection';
 import { CommunityInfo } from '@/components/communities/CommunityInfo';
 import { Card } from '@/components/ui/card';

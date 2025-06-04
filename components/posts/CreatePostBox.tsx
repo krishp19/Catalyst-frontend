@@ -1,12 +1,12 @@
 "use client";
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
+import { useAuth } from '../../contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Input } from '../../components/ui/input';
 import { Image, Link2, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 
 export const CreatePostBox = () => {
   const { user, setIsLoginModalOpen } = useAuth();

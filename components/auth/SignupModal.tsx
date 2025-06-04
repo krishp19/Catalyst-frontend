@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../src/services/auth/authService';
 import {
   Dialog,
@@ -12,8 +12,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
 import {
   Form,
   FormControl,
@@ -22,10 +22,10 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from '../../components/ui/form';
+import { Input } from '../../components/ui/input';
 import { Loader2, Check, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../../hooks/use-toast';
 
 // Password requirements
 const passwordRequirements = [
@@ -74,12 +74,28 @@ const signupSchema = z.object({
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
-export const SignupModal = () => {
-  const { isSignupModalOpen, setIsSignupModalOpen, setIsLoginModalOpen } = useAuth();
+interface SignupModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onLoginClick?: () => void;
+}
+
+export const SignupModal: React.FC<SignupModalProps> = ({
+  open: externalOpen,
+  onOpenChange: setExternalOpen,
+  onLoginClick: externalLoginClick,
+}) => {
+  const { setIsSignupModalOpen, setIsLoginModalOpen } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   const { toast } = useToast();
   
+  // Handle both controlled and uncontrolled open state
+  const isControlled = externalOpen !== undefined;
+  const open = isControlled ? externalOpen : false; // Default to false for uncontrolled
+  const setOpen = isControlled ? (setExternalOpen || (() => {})) : setIsSignupModalOpen;
+
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -126,7 +142,7 @@ export const SignupModal = () => {
 
       // Close signup and open login modal
       form.reset();
-      setIsSignupModalOpen(false);
+      setOpen(false);
       setIsLoginModalOpen(true);
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -140,15 +156,25 @@ export const SignupModal = () => {
     }
   };
 
-  const handleLoginClick = () => {
-    form.reset();
-    setIsSignupModalOpen(false);
-    setIsLoginModalOpen(true);
-  };
+  const handleLoginClick = useCallback(() => {
+    setOpen(false);
+    if (externalLoginClick) {
+      externalLoginClick();
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  }, [setOpen, externalLoginClick, setIsLoginModalOpen]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) {
+      form.reset();
+    }
+    setOpen(newOpen);
+  }, [form, setOpen]);
 
   return (
-    <Dialog open={isSignupModalOpen} onOpenChange={setIsSignupModalOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-2xl">Create an account</DialogTitle>
           <DialogDescription>
@@ -253,12 +279,18 @@ export const SignupModal = () => {
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          <p className="text-muted-foreground">
-            Already have an account?{' '}
-            <Button variant="link" className="p-0" onClick={handleLoginClick}>
-              Log in
-            </Button>
-          </p>
+          <div className="text-center text-sm">
+            <p className="text-muted-foreground">
+              Already have an account?{' '}
+              <Button 
+                variant="link" 
+                className="p-0 h-auto" 
+                onClick={handleLoginClick}
+              >
+                Log in
+              </Button>
+            </p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

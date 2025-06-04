@@ -1,10 +1,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
-import Header from '@/components/layout/Header';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '../components/theme-provider';
+import Header from '../components/layout/Header';
+import { Toaster } from '../components/ui/toaster';
+import { AuthProvider } from '../contexts/AuthContext';
+import { Providers } from '../src/providers/providers';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,13 +28,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <div className="min-h-screen flex flex-col">
+          <Providers>
+            <AuthProvider>
+              <div className="min-h-screen flex flex-col">
               <Header />
               <main className="flex-1">{children}</main>
               <Toaster />
-            </div>
-          </AuthProvider>
+              </div>
+            </AuthProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

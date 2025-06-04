@@ -1,15 +1,21 @@
-// Types for authentication related data structures
 export interface User {
   id: string;
   username: string;
   email: string;
-  // Add other user fields as needed
+  bio: string | null;
+  avatarUrl: string | null;
+  reputationScore: number;
+  postScore: number;
+  commentScore: number;
+  communityScore: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthResponse {
   user: User;
-  token: string;
-  refreshToken?: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface SignupData {
@@ -19,19 +25,23 @@ export interface SignupData {
 }
 
 export interface LoginData {
-  email: string;
+  username: string;
   password: string;
 }
 
-export interface AuthError {
-  message: string;
-  status?: number;
-  code?: string;
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: {
+    message: string;
+    status?: number;
+  };
 }
 
 export interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  error: AuthError | null;
+  error: string | null;
 }

@@ -1,19 +1,19 @@
 "use client";
 
 import React, { useState } from 'react';
-import { PostCard } from '@/components/posts/PostCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PostCard } from '../../components/posts/PostCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Rocket, Flame, Clock, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Post } from '@/lib/types';
-import { mockPosts } from '@/lib/mock-data';
-import { Card } from '@/components/ui/card';
+} from '../../components/ui/dropdown-menu';
+import { Post } from '../../lib/types';
+import { mockPosts } from '../../lib/mock-data';
+import { Card } from '../../components/ui/card';
 
 interface PostListProps {
   initialPosts?: Post[];

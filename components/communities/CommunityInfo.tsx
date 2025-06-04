@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cake, Users, Eye, Info } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
+import { Cake, Users, Eye } from 'lucide-react';
+import { Separator } from '../../components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 
 interface CommunityInfoProps {
