@@ -1,24 +1,102 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { ArrowUp } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { communityService, Community, ApiResponse } from '../../src/services/communityService';
+import { Users, ChevronRight } from 'lucide-react';
+import { useAppSelector } from '../../src/store/hooks';
 
-interface Community {
-  id: string;
-  name: string;
-  icon: string;
-  members: number;
-  trending?: boolean;
-}
+export const TopCommunities = () => {
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const { user, setIsLoginModalOpen } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated } = useAppSelector((state: any) => state.auth);
 
-interface TopCommunitiesProps {
-  communities?: Community[];
-}
+  const fetchCommunities = async () => {
+    try {
+      const data = await communityService.getCommunities();
+      setCommunities(data.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch communities');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-export const TopCommunities = ({ communities = defaultCommunities }: TopCommunitiesProps) => {
+  useEffect(() => {
+    fetchCommunities();
+  }, []);
+
+  const handleJoin = async (communityId: string) => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to join communities', {
+        description: 'You need to be logged in to join a community.',
+      });
+      return;
+    }
+
+    setJoiningId(communityId);
+    try {
+      const response = await communityService.joinCommunity(communityId);
+      toast.success(response.message || 'Successfully joined the community!');
+      await fetchCommunities();
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        toast.error('Please log in to join communities', {
+          description: 'You need to be logged in to join a community.',
+        });
+      } else if (error.response?.status === 409) {
+        toast.error(error.response.data.message || 'Already a member', {
+          description: 'You are already a member of this community.',
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to join community', {
+          description: 'An error occurred while trying to join the community.',
+        });
+      }
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  const handleViewAll = () => {
+    router.push('/communities');
+  };
+
+  if (loading) {
+    return (
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Top Growing Communities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 text-center text-muted-foreground">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Top Growing Communities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 text-center text-destructive">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2">
@@ -34,24 +112,29 @@ export const TopCommunities = ({ communities = defaultCommunities }: TopCommunit
                   {index + 1}
                 </span>
                 
-                {community.trending && (
-                  <ArrowUp className="h-4 w-4 text-green-500" />
-                )}
-                
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={community.icon} alt={community.name} />
+                  <AvatarImage src={community.iconUrl} alt={community.name} />
                   <AvatarFallback>{community.name[0]}</AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">r/{community.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {community.members.toLocaleString()} members
+                    {community.memberCount.toLocaleString()} members
                   </p>
                 </div>
                 
-                <Button variant="outline" size="sm" className="h-7 text-xs">
-                  Join
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleJoin(community.id);
+                  }}
+                  disabled={joiningId === community.id}
+                >
+                  {joiningId === community.id ? 'Joining...' : 'Join'}
                 </Button>
               </a>
             </li>
@@ -59,7 +142,12 @@ export const TopCommunities = ({ communities = defaultCommunities }: TopCommunit
         </ul>
         
         <div className="p-3">
-          <Button variant="ghost" className="w-full text-sm" size="sm">
+          <Button 
+            variant="ghost" 
+            className="w-full text-sm" 
+            size="sm"
+            onClick={handleViewAll}
+          >
             View All
           </Button>
         </div>
@@ -67,39 +155,3 @@ export const TopCommunities = ({ communities = defaultCommunities }: TopCommunit
     </Card>
   );
 };
-
-const defaultCommunities: Community[] = [
-  {
-    id: '1',
-    name: 'programming',
-    icon: 'https://api.dicebear.com/7.x/identicon/svg?seed=programming',
-    members: 5243000,
-    trending: true,
-  },
-  {
-    id: '2',
-    name: 'webdev',
-    icon: 'https://api.dicebear.com/7.x/identicon/svg?seed=webdev',
-    members: 934000,
-    trending: true,
-  },
-  {
-    id: '3',
-    name: 'nextjs',
-    icon: 'https://api.dicebear.com/7.x/identicon/svg?seed=nextjs',
-    members: 324000,
-  },
-  {
-    id: '4',
-    name: 'reactjs',
-    icon: 'https://api.dicebear.com/7.x/identicon/svg?seed=reactjs',
-    members: 842000,
-    trending: true,
-  },
-  {
-    id: '5',
-    name: 'tailwindcss',
-    icon: 'https://api.dicebear.com/7.x/identicon/svg?seed=tailwindcss',
-    members: 254000,
-  },
-];

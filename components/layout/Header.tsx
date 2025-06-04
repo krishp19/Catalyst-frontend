@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image, Users, Star, LogOut } from 'lucide-react';
+import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image, Users, Star, LogOut, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -21,6 +21,7 @@ import { cn } from '../../lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { MobileSidebar } from './MobileSidebar';
 import defaultAvatar from '../../assets/avatar.webp';
+import { CreateCommunityModal } from '../communities/CreateCommunityModal';
 
 const Header = () => {
   const { user, isAuthenticated } = useAppSelector((state: any) => state.auth);
@@ -28,6 +29,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
+  const [isCreateCommunityModalOpen, setIsCreateCommunityModalOpen] = React.useState(false);
   const dispatch = useAppDispatch();
   
   return (
@@ -61,6 +63,18 @@ const Header = () => {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2 md:gap-4 ml-auto">
+            {isAuthenticated && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden md:flex items-center gap-2"
+                onClick={() => setIsCreateCommunityModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create</span>
+              </Button>
+            )}
+
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <MessageSquare className="h-5 w-5" />
             </Button>
@@ -165,6 +179,10 @@ const Header = () => {
           setIsSignupModalOpen(false);
           setIsLoginModalOpen(true);
         }}
+      />
+      <CreateCommunityModal
+        open={isCreateCommunityModalOpen}
+        onOpenChange={setIsCreateCommunityModalOpen}
       />
     </>
   );

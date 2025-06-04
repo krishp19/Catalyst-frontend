@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input';
 import { Image, Link2, FileText } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import defaultAvatar from '../../assets/avatar.webp';
 
 export const CreatePostBox = () => {
   const { user, setIsLoginModalOpen } = useAuth();
@@ -27,7 +28,7 @@ export const CreatePostBox = () => {
         <Avatar className="h-9 w-9">
           {user ? (
             <>
-              <AvatarImage src={user.avatar} alt={user.username} />
+              <AvatarImage src={user.avatar || defaultAvatar.src} alt={user.username} />
               <AvatarFallback>{user.username?.[0]}</AvatarFallback>
             </>
           ) : (
