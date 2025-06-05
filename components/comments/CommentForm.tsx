@@ -5,39 +5,29 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { useAuth } from '../../src/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Comment } from '../../src/types/comment';
 
 interface CommentFormProps {
   postId: string;
-  onCommentAdded: (comment: Comment) => void;
+  onCommentAdded: (content: string) => void;
 }
 
 export const CommentForm = ({ postId, onCommentAdded }: CommentFormProps) => {
   const [content, setContent] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { user } = useAuth();
+  const { user, setIsLoginModalOpen } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !user) return;
+    if (!content.trim()) return;
+
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const newComment: Comment = {
-        id: Date.now().toString(),
-        content: content.trim(),
-        author: {
-          id: user.id,
-          username: user.username,
-          karma: user.karma || 0,
-          avatar: user.avatar
-        },
-        postId,
-        votes: 0,
-        createdAt: new Date().toISOString(),
-        replies: []
-      };
-      onCommentAdded(newComment);
+      await onCommentAdded(content.trim());
       setContent('');
     } finally {
       setIsSubmitting(false);
@@ -48,7 +38,7 @@ export const CommentForm = ({ postId, onCommentAdded }: CommentFormProps) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex gap-3">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={user?.avatar} alt={user?.username} />
+          <AvatarImage src={user?.avatarUrl ?? undefined} alt={user?.username ?? ''} />
           <AvatarFallback>{user?.username?.[0]}</AvatarFallback>
         </Avatar>
         <Textarea

@@ -1,31 +1,90 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Comment } from '../../src/types/comment';
+import React, { useState, useEffect } from 'react';
+import { Comment, CommentResponse } from '../../src/services/commentService';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { MessageSquare, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '../../src/hooks/useAuth';
+import { commentService } from '../../src/services/commentService';
+import { toast } from 'sonner';
 
 interface CommentSectionProps {
   postId: string;
 }
 
+// Extend the Comment interface to include replies
+interface CommentWithReplies extends Comment {
+  replies?: CommentWithReplies[];
+}
+
 export const CommentSection = ({ postId }: CommentSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'top' | 'new' | 'controversial'>('top');
   const { user } = useAuth();
 
-  const handleAddComment = (newComment: Comment) => {
-    const commentWithId: Comment = {
-      ...newComment,
-      id: Date.now().toString(),
-      votes: 0,
-      createdAt: new Date().toISOString()
-    };
-    setComments(prev => [commentWithId, ...prev]);
+  const buildCommentTree = (flatComments: Comment[]): Comment[] => {
+    const commentMap = new Map<string, Comment>();
+    const commentTree: Comment[] = [];
+
+    // First pass: Create a map of all comments and initialize replies array
+    flatComments.forEach(comment => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    // Second pass: Build the tree
+    flatComments.forEach(comment => {
+      const commentWithReplies = commentMap.get(comment.id)!;
+      
+      if (comment.parentId) {
+        const parent = commentMap.get(comment.parentId);
+        if (parent) {
+          if (!parent.replies) parent.replies = [];
+          parent.replies.push(commentWithReplies);
+        }
+      } else {
+        commentTree.push(commentWithReplies);
+      }
+    });
+
+    return commentTree;
+  };
+
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const response = await commentService.getComments(postId, 1, 50);
+      const commentTree = buildCommentTree(response.items);
+      setComments(commentTree);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast.error('Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+  }, [postId]);
+
+  const handleAddComment = async (content: string) => {
+    if (!user) return;
+    
+    try {
+      const newComment = await commentService.createComment({
+        content,
+        postId,
+      });
+      setComments(prev => [newComment, ...prev]);
+      toast.success('Comment posted successfully');
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      toast.error('Failed to post comment');
+    }
   };
 
   const sortedComments = React.useMemo(() => {
@@ -36,9 +95,9 @@ export const CommentSection = ({ postId }: CommentSectionProps) => {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       case 'controversial':
-        return sorted.sort((a, b) => Math.abs(b.votes) - Math.abs(a.votes));
+        return sorted.sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
       default: // 'top'
-        return sorted.sort((a, b) => b.votes - a.votes);
+        return sorted.sort((a, b) => b.score - a.score);
     }
   }, [comments, sortBy]);
 
@@ -81,7 +140,17 @@ export const CommentSection = ({ postId }: CommentSectionProps) => {
 
       <div className="p-4">
         <CommentForm postId={postId} onCommentAdded={handleAddComment} />
-        <CommentList comments={sortedComments} />
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          </div>
+        ) : (
+          <CommentList 
+            comments={sortedComments} 
+            onCommentUpdate={fetchComments}
+            postId={postId}
+          />
+        )}
       </div>
     </Card>
   );
