@@ -39,6 +39,7 @@ interface CommunityPageClientProps {
 export default function CommunityPageClient({ initialCommunity }: CommunityPageClientProps) {
   const [community, setCommunity] = useState<Community>(initialCommunity);
   const [isMember, setIsMember] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -68,18 +69,39 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
 
   useEffect(() => {
     const checkMembership = async () => {
+      if (!user) {
+        console.log('No user logged in, setting isMember to false');
+        setIsMember(false);
+        setLoading(false);
+        return;
+      }
+
+      // Skip if user is not authenticated or community ID is not available
+      if (!user.id || !community?.id) {
+        console.log('Missing required data for membership check:', { userId: user.id, communityId: community?.id });
+        setIsMember(false);
+        setLoading(false);
+        return;
+      }
+
       try {
+        console.log('Checking membership for user:', user.id, 'in community:', community.id);
         const memberStatus = await communityService.isMember(community.id);
-        setIsMember(memberStatus);
+        console.log('Membership status:', memberStatus);
+        // Only update state if the component is still mounted and user is still authenticated
+        if (user) {
+          setIsMember(memberStatus);
+        }
       } catch (error) {
         console.error('Error checking membership:', error);
+        toast.error('Failed to check community membership');
       } finally {
         setLoading(false);
       }
     };
 
     checkMembership();
-  }, [community.id]);
+  }, [community.id, user]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -105,19 +127,62 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
   }, [community.id, currentPage, sort]);
 
   const handleJoin = async () => {
+    console.log('handleJoin called, current isMember:', isMember);
+    
+    if (!user) {
+      console.log('No user, opening login modal');
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    setIsProcessing(true);
     try {
       if (isMember) {
+        console.log('Leaving community:', community.id);
         await communityService.leaveCommunity(community.id);
+        console.log('Successfully left community');
         toast.success('Successfully left the community');
         setIsMember(false);
+        // Update member count
+        setCommunity(prev => ({
+          ...prev,
+          memberCount: Math.max(0, prev.memberCount - 1)
+        }));
       } else {
-        await communityService.joinCommunity(community.id);
-        toast.success('Successfully joined the community');
-        setIsMember(true);
+        console.log('Joining community:', community.id);
+        try {
+          await communityService.joinCommunity(community.id);
+          console.log('Successfully joined community');
+          toast.success('Successfully joined the community');
+          setIsMember(true);
+          // Update member count
+          setCommunity(prev => ({
+            ...prev,
+            memberCount: prev.memberCount + 1
+          }));
+        } catch (error: any) {
+          // Handle 409 Conflict (already a member)
+          if (error.response?.status === 409) {
+            console.log('User is already a member, updating UI state');
+            setIsMember(true);
+            // Don't show error toast for this case
+            return;
+          }
+          // Re-throw other errors
+          throw error;
+        }
       }
     } catch (error) {
-      toast.error('Failed to update membership');
-      console.error('Error updating membership:', error);
+      const action = isMember ? 'leave' : 'join';
+      console.error(`Error ${action}ing community:`, error);
+      
+      // Skip showing error toast for 409 Conflict as we handle it above
+      if (error.response?.status !== 409) {
+        toast.error(`Failed to ${action} community: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+      }
+    } finally {
+      console.log('Join/Leave operation completed, isMember:', isMember);
+      setIsProcessing(false);
     }
   };
 
@@ -145,7 +210,7 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
             ? {
                 ...post,
                 score: response.score,
-                userVote: type,
+                userVote: type === 'upvote' ? 'up' : 'down',
               }
             : post
         )
@@ -221,13 +286,22 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
               <Button
                 onClick={handleJoin}
                 variant={isMember ? "outline" : "default"}
+                disabled={isProcessing}
                 className={`w-full md:w-auto transition-all duration-200 ${
                   isMember 
-                    ? 'border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/20' 
+                    ? 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100 dark:border-green-900 dark:text-green-400 dark:bg-green-900/20 dark:hover:bg-green-800/30' 
                     : 'bg-orange-500 hover:bg-orange-600 text-white'
                 }`}
               >
-                {isMember ? 'Leave' : 'Join'}
+                {isProcessing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {isMember ? 'Leaving...' : 'Joining...'}
+                  </>
+                ) : isMember ? 'Joined' : 'Join'}
               </Button>
               <Button 
                 variant="outline" 

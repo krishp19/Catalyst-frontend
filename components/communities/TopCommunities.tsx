@@ -14,17 +14,36 @@ import { useAppSelector } from '../../src/store/hooks';
 
 export const TopCommunities = () => {
   const [communities, setCommunities] = useState<Community[]>([]);
+  const [joinedCommunities, setJoinedCommunities] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const { user, setIsLoginModalOpen } = useAuth();
   const router = useRouter();
   const { isAuthenticated } = useAppSelector((state: any) => state.auth);
 
   const fetchCommunities = async () => {
     try {
-      const data = await communityService.getCommunities();
-      setCommunities(data.items);
+      console.log('Fetching communities and joined status...');
+      const [communitiesData, joinedData] = await Promise.all([
+        communityService.getCommunities(),
+        isAuthenticated ? communityService.getMyJoinedCommunities() : Promise.resolve([]),
+      ]);
+      
+      console.log('Fetched communities:', communitiesData.items);
+      console.log('Fetched joined communities:', joinedData);
+      
+      setCommunities(communitiesData.items);
+      
+      // Create a Set of joined community IDs for quick lookup
+      if (isAuthenticated) {
+        const joinedIds = new Set(joinedData.map((c: any) => c.id));
+        console.log('Setting joined community IDs:', Array.from(joinedIds));
+        setJoinedCommunities(joinedIds);
+      } else {
+        console.log('User not authenticated, clearing joined communities');
+        setJoinedCommunities(new Set());
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch communities');
     } finally {
@@ -34,25 +53,50 @@ export const TopCommunities = () => {
 
   useEffect(() => {
     fetchCommunities();
-  }, []);
+  }, [isAuthenticated]); // Refetch when auth state changes
 
-  const handleJoin = async (communityId: string) => {
+  const handleJoin = async (communityId: string, isCurrentlyJoined: boolean) => {
     if (!isAuthenticated) {
       setIsLoginModalOpen(true);
       return;
     }
 
-    setJoiningId(communityId);
+    setProcessingId(communityId);
     try {
-      await communityService.joinCommunity(communityId);
-      toast.success('Successfully joined the community');
-      // Refresh the communities list
-      fetchCommunities();
+      if (isCurrentlyJoined) {
+        await communityService.leaveCommunity(communityId);
+        toast.success('Successfully left the community');
+        setJoinedCommunities(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(communityId);
+          return newSet;
+        });
+      } else {
+        await communityService.joinCommunity(communityId);
+        toast.success('Successfully joined the community');
+        setJoinedCommunities(prev => new Set(prev).add(communityId));
+      }
+      
+      // Update the community's member count
+      setCommunities(prev => 
+        prev.map(community => {
+          if (community.id === communityId) {
+            return {
+              ...community,
+              memberCount: isCurrentlyJoined 
+                ? Math.max(0, community.memberCount - 1) 
+                : community.memberCount + 1
+            };
+          }
+          return community;
+        })
+      );
     } catch (error) {
-      toast.error('Failed to join community');
-      console.error('Error joining community:', error);
+      const action = isCurrentlyJoined ? 'leave' : 'join';
+      toast.error(`Failed to ${action} community`);
+      console.error(`Error ${action}ing community:`, error);
     } finally {
-      setJoiningId(null);
+      setProcessingId(null);
     }
   };
 
@@ -131,20 +175,35 @@ export const TopCommunities = () => {
                   </div>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={`h-7 text-xs border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/20 ${
-                    joiningId === community.id ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleJoin(community.id);
-                  }}
-                  disabled={joiningId === community.id}
-                >
-                  {joiningId === community.id ? 'Joining...' : 'Join'}
-                </Button>
+                {joinedCommunities.has(community.id) ? (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs border-green-200 text-green-700 bg-green-50 hover:bg-green-100 dark:border-green-900 dark:text-green-400 dark:bg-green-900/20 dark:hover:bg-green-800/30"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleJoin(community.id, true);
+                    }}
+                    disabled={processingId === community.id}
+                  >
+                    {processingId === community.id ? 'Leaving...' : 'Joined'}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleJoin(community.id, false);
+                    }}
+                    disabled={processingId === community.id}
+                  >
+                    {processingId === community.id ? 'Joining...' : 'Join'}
+                  </Button>
+                )}
               </Link>
             </li>
           ))}
