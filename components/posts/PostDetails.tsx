@@ -1,11 +1,11 @@
 "use client";
 
-import React from 'react';
-import { Post } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Post } from '../../src/types/post';
+import { Card } from '../ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { 
   ArrowUp, 
   ArrowDown, 
@@ -16,7 +16,11 @@ import {
   Link2,
   Flag,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowBigUp,
+  ArrowBigDown,
+  Share2,
+  BookmarkPlus
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,29 +28,80 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '../ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../../lib/utils';
+import { postService } from '../../src/services/postService';
+import { voteService } from '../../src/services/voteService';
+import { toast } from 'sonner';
+import { useAuth } from '../../src/hooks/useAuth';
 
 interface PostDetailsProps {
   post: Post;
 }
 
-export const PostDetails = ({ post }: PostDetailsProps) => {
-  const [votes, setVotes] = React.useState(post.votes);
-  const [voteStatus, setVoteStatus] = React.useState<'up' | 'down' | null>(null);
-  const [saved, setSaved] = React.useState(false);
+export function PostDetails({ post }: PostDetailsProps) {
+  const { user, setIsLoginModalOpen } = useAuth();
+  console.log('PostDetails - Auth State:', { 
+    isAuthenticated: !!user,
+    userId: user?.id,
+    username: user?.username
+  });
+  const [votes, setVotes] = useState(post.score);
+  const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(null);
+  const [isVoting, setIsVoting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const handleVote = (direction: 'up' | 'down') => {
-    if (voteStatus === direction) {
-      setVotes(votes + (direction === 'up' ? -1 : 1));
-      setVoteStatus(null);
-    } else {
-      const voteChange = direction === 'up' 
-        ? (voteStatus === 'down' ? 2 : 1) 
-        : (voteStatus === 'up' ? -2 : -1);
-      setVotes(votes + voteChange);
-      setVoteStatus(direction);
+  const handleVote = async (type: 'upvote' | 'downvote') => {
+    console.log('handleVote called with type:', type);
+    console.log('Current user:', user);
+    
+    if (!user) {
+      console.log('No user found, opening login modal');
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    if (isVoting) {
+      console.log('Already voting, ignoring request');
+      return;
+    }
+
+    try {
+      setIsVoting(true);
+      console.log('Making vote request...');
+
+      // If user has already voted this way, remove the vote
+      if (userVote === type) {
+        console.log('Removing existing vote');
+        const response = await voteService.removeVote(post.id);
+        console.log('Remove vote response:', response);
+        
+        setVotes((prev) => prev - (type === 'upvote' ? 1 : -1));
+        setUserVote(null);
+      } else {
+        // If user has voted the other way, remove that vote first
+        if (userVote) {
+          console.log('Removing previous vote');
+          await voteService.removeVote(post.id);
+          setVotes((prev) => prev - (userVote === 'upvote' ? 1 : -1));
+        }
+
+        // Add the new vote
+        console.log('Adding new vote:', type);
+        const response = await (type === 'upvote' 
+          ? voteService.upvote(post.id)
+          : voteService.downvote(post.id));
+        console.log('Vote response:', response);
+        
+        setVotes((prev) => prev + (type === 'upvote' ? 1 : -1));
+        setUserVote(type);
+      }
+    } catch (error) {
+      console.error('Vote error:', error);
+      toast.error('Failed to vote. Please try again.');
+    } finally {
+      setIsVoting(false);
     }
   };
 
@@ -60,18 +115,24 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
             size="icon" 
             className={cn(
               "rounded-full h-8 w-8 p-0",
-              voteStatus === 'up' && "text-orange-500 dark:text-orange-400"
+              userVote === 'upvote' && "text-orange-500 dark:text-orange-400"
             )}
-            onClick={() => handleVote('up')}
+            onClick={() => {
+              console.log('Upvote button clicked - PostDetails'); // Debug log
+              console.log('Post ID:', post.id); // Debug log
+              console.log('User:', user); // Debug log
+              handleVote('upvote');
+            }}
+            disabled={isVoting}
           >
-            <ArrowUp className="h-5 w-5" />
+            <ArrowBigUp className="h-5 w-5" />
             <span className="sr-only">Upvote</span>
           </Button>
           
           <span className={cn(
             "text-sm font-medium py-1",
-            voteStatus === 'up' && "text-orange-500 dark:text-orange-400",
-            voteStatus === 'down' && "text-blue-500 dark:text-blue-400"
+            userVote === 'upvote' && "text-orange-500 dark:text-orange-400",
+            userVote === 'downvote' && "text-blue-500 dark:text-blue-400"
           )}>
             {votes}
           </span>
@@ -81,11 +142,17 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
             size="icon" 
             className={cn(
               "rounded-full h-8 w-8 p-0",
-              voteStatus === 'down' && "text-blue-500 dark:text-blue-400"
+              userVote === 'downvote' && "text-blue-500 dark:text-blue-400"
             )}
-            onClick={() => handleVote('down')}
+            onClick={() => {
+              console.log('Downvote button clicked - PostDetails'); // Debug log
+              console.log('Post ID:', post.id); // Debug log
+              console.log('User:', user); // Debug log
+              handleVote('downvote');
+            }}
+            disabled={isVoting}
           >
-            <ArrowDown className="h-5 w-5" />
+            <ArrowBigDown className="h-5 w-5" />
             <span className="sr-only">Downvote</span>
           </Button>
         </div>
@@ -96,7 +163,7 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
           <div className="flex items-center text-sm text-muted-foreground mb-3">
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
-                <AvatarImage src={post.community.icon} alt={post.community.name} />
+                <AvatarImage src={post.community.iconUrl} alt={post.community.name} />
                 <AvatarFallback>{post.community.name[0]}</AvatarFallback>
               </Avatar>
               <a href={`/r/${post.community.name}`} className="font-medium hover:underline">
@@ -126,29 +193,29 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
           )}
           
           {/* Post Content */}
-          {post.contentType === 'text' && (
+          {post.type === 'text' && (
             <div className="text-base mb-4 whitespace-pre-wrap">{post.content}</div>
           )}
           
-          {post.contentType === 'image' && (
+          {post.type === 'image' && post.imageUrl && (
             <div className="mb-4 rounded-md overflow-hidden">
               <img 
-                src={post.content as string} 
+                src={post.imageUrl} 
                 alt={post.title} 
                 className="w-full h-auto"
               />
             </div>
           )}
           
-          {post.contentType === 'link' && (
+          {post.type === 'link' && post.linkUrl && (
             <a 
-              href={post.content as string} 
+              href={post.linkUrl} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline flex items-center mb-4"
             >
               <Link2 className="h-4 w-4 mr-2" />
-              {post.content as string}
+              {post.linkUrl}
             </a>
           )}
           
@@ -160,7 +227,7 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
             </Button>
             
             <Button variant="ghost" size="sm" className="gap-2">
-              <Share className="h-4 w-4" />
+              <Share2 className="h-4 w-4" />
               Share
             </Button>
             
@@ -170,7 +237,7 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
               className={cn("gap-2", saved && "text-yellow-500")}
               onClick={() => setSaved(!saved)}
             >
-              <Bookmark className="h-4 w-4" />
+              <BookmarkPlus className="h-4 w-4" />
               {saved ? "Saved" : "Save"}
             </Button>
             
@@ -201,4 +268,4 @@ export const PostDetails = ({ post }: PostDetailsProps) => {
       </div>
     </Card>
   );
-};
+}

@@ -1,56 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useAppSelector } from '../store/hooks';
+import { useAppDispatch } from '../store/hooks';
+import { logout } from '../store/features/auth/authSlice';
 
-interface User {
+export interface User {
+  karma: number;
   id: string;
   username: string;
   email: string;
-  avatarUrl?: string;
+  avatar?: string;
 }
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  setIsLoginModalOpen: (isOpen: boolean) => void;
 }
 
 export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isLoading: true,
-    isAuthenticated: false,
-  });
+  const dispatch = useAppDispatch();
+  const { user, isLoading, isAuthenticated } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    // Check if user is logged in
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const user = await response.json();
-          setAuthState({
-            user,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-        } else {
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false,
-          });
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
-      }
-    };
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
-    checkAuth();
-  }, []);
-
-  return authState;
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
+    logout: handleLogout,
+    setIsLoginModalOpen: (isOpen: boolean) => {
+      // Implement modal state management here
+      console.log('Modal state:', isOpen);
+    }
+  };
 } 

@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Comment } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Comment } from '../../src/types/comment';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Button } from '../ui/button';
 import { ArrowUp, ArrowDown, MessageSquare, MoreHorizontal, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../../lib/utils';
@@ -13,8 +13,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
+} from '../ui/dropdown-menu';
+import { useAuth } from '../../src/hooks/useAuth';
 
 interface CommentThreadProps {
   comment: Comment;
@@ -47,20 +47,7 @@ export const CommentThread = ({ comment, depth = 0 }: CommentThreadProps) => {
     }
   };
 
-  const handleReply = (content: string) => {
-    const newReply: Comment = {
-      id: Date.now().toString(),
-      content,
-      author: {
-        id: user!.id,
-        username: user!.username,
-        karma: user!.karma,
-        avatar: user!.avatar,
-      },
-      votes: 1,
-      createdAt: new Date().toISOString(),
-    };
-
+  const handleReply = (newReply: Comment) => {
     setReplies([...replies, newReply]);
     setIsReplying(false);
   };
@@ -155,9 +142,8 @@ export const CommentThread = ({ comment, depth = 0 }: CommentThreadProps) => {
           {isReplying && (
             <div className="mt-4">
               <CommentForm 
-                onSubmit={handleReply}
-                replyTo={comment.author.username}
-                onCancel={() => setIsReplying(false)}
+                postId={comment.postId}
+                onCommentAdded={handleReply}
               />
             </div>
           )}

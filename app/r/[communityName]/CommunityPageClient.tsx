@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Community } from '../../../src/services/communityService';
 import { communityService } from '../../../src/services/communityService';
-import { postService, Post, PostSort } from '../../../src/services/postService';
+import { postService, PostSort } from '../../../src/services/postService';
+import { voteService } from '../../../src/services/voteService';
+import { Post } from '../../../src/types/post';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
@@ -43,6 +45,15 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sort, setSort] = useState<PostSort>(PostSort.HOT);
+  const { user, setIsLoginModalOpen } = useAuth();
+  const router = useRouter();
+
+  // Add this temporary debug section
+  console.log('CommunityPageClient - Auth State:', { 
+    isAuthenticated: !!user,
+    userId: user?.id,
+    username: user?.username
+  });
 
   const sortOptions = [PostSort.HOT, PostSort.NEW, PostSort.TOP];
 
@@ -107,6 +118,44 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
     } catch (error) {
       toast.error('Failed to update membership');
       console.error('Error updating membership:', error);
+    }
+  };
+
+  const handleVote = async (postId: string, type: 'upvote' | 'downvote') => {
+    console.log('handleVote called with type:', type);
+    console.log('Current user:', user);
+    
+    if (!user) {
+      console.log('No user found, opening login modal');
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    try {
+      console.log('Making vote request...');
+      const response = await (type === 'upvote' 
+        ? voteService.upvote(postId)
+        : voteService.downvote(postId));
+      console.log('Vote response:', response);
+
+      // Update the posts state with the new vote count
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                score: response.score,
+                userVote: type,
+              }
+            : post
+        )
+      );
+
+      // Navigate to the post details page
+      router.push(`/post/${postId}`);
+    } catch (error) {
+      console.error('Vote error:', error);
+      toast.error('Failed to vote. Please try again.');
     }
   };
 
@@ -314,9 +363,14 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
 
                         {/* Post Content */}
                         <div className="p-4">
-                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 hover:text-blue-500 transition-colors duration-200">
-                            {post.title}
-                          </h2>
+                          <Link 
+                            href={`/post/${post.id}`}
+                            className="block"
+                          >
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 hover:text-orange-500 dark:hover:text-orange-400 transition-colors duration-200">
+                              {post.title}
+                            </h2>
+                          </Link>
                           {post.type === 'text' && (
                             <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                               {post.content}
@@ -348,16 +402,36 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                         <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                              <button className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 transition-colors duration-200">
-                                <ArrowUpIcon className="w-5 h-5" />
+                              <button 
+                                onClick={(e) => {
+                                  console.log('Vote button clicked - CommunityPageClient'); // Debug log
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('Post ID:', post.id); // Debug log
+                                  console.log('User:', user); // Debug log
+                                  handleVote(post.id, 'upvote');
+                                }}
+                                className="flex items-center space-x-1 text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors duration-200"
+                              >
+                                <ArrowUp className="w-5 h-5" />
                                 <span>{post.upvotes}</span>
                               </button>
-                              <button className="flex items-center space-x-1 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors duration-200">
-                                <ArrowDownIcon className="w-5 h-5" />
+                              <button 
+                                onClick={(e) => {
+                                  console.log('Vote button clicked - CommunityPageClient'); // Debug log
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('Post ID:', post.id); // Debug log
+                                  console.log('User:', user); // Debug log
+                                  handleVote(post.id, 'downvote');
+                                }}
+                                className="flex items-center space-x-1 text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors duration-200"
+                              >
+                                <ArrowDown className="w-5 h-5" />
                                 <span>{post.downvotes}</span>
                               </button>
                               <button className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200">
-                                <ChatBubbleLeftIcon className="w-5 h-5" />
+                                <MessageCircle className="w-5 h-5" />
                                 <span>{post.commentCount} Comments</span>
                               </button>
                             </div>

@@ -113,32 +113,45 @@ export class HttpClient {
   }
 }
 
-const httpClient = axios.create({
+export const httpClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
-// Function to get the token from localStorage
-const getToken = () => {
+// Add request interceptor to include auth token
+httpClient.interceptors.request.use((config) => {
+  // Get token from localStorage
   const persistRoot = localStorage.getItem('persist:root');
   if (persistRoot) {
-    const { auth } = JSON.parse(persistRoot);
-    const authState = JSON.parse(auth);
-    return authState.accessToken;
-  }
-  return null;
-};
-
-// Add a request interceptor to include the auth token in the Authorization header
-httpClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getToken();
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const { auth } = JSON.parse(persistRoot);
+      const authState = JSON.parse(auth);
+      if (authState.accessToken) {
+        config.headers.Authorization = `Bearer ${authState.accessToken}`;
+        console.log('Added auth token to request:', config.headers.Authorization); // Debug log
+      } else {
+        console.log('No access token found in auth state'); // Debug log
+      }
+    } catch (error) {
+      console.error('Error parsing auth state:', error);
+    }
+  } else {
+    console.log('No persist:root found in localStorage'); // Debug log
   }
   return config;
 });
 
-export { httpClient };
+// Add response interceptor for debugging
+httpClient.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', response); // Debug log
+    return response;
+  },
+  (error) => {
+    console.error('Request failed:', error.response || error); // Debug log
+    return Promise.reject(error);
+  }
+);

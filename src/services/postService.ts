@@ -1,4 +1,6 @@
+import axios from 'axios';
 import { httpClient } from '../lib/api/httpClient';
+import { Post } from '../types/post';
 
 export enum PostType {
   TEXT = 'text',
@@ -21,36 +23,8 @@ export interface CreatePostDto {
   communityId: string;
 }
 
-export interface Post {
-  id: string;
-  title: string;
-  content?: string;
-  imageUrl?: string;
-  linkUrl?: string;
-  type: PostType;
-  communityId: string;
-  authorId: string;
-  createdAt: string;
-  updatedAt: string;
-  score: number;
-  upvotes: number;
-  downvotes: number;
-  commentCount: number;
-  isPinned: boolean;
-  author: {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  community: {
-    id: string;
-    name: string;
-    iconUrl?: string;
-  };
-}
-
-export interface PostsResponse {
-  items: Post[];
+export interface ApiResponse<T> {
+  items: T[];
   meta: {
     totalItems: number;
     itemCount: number;
@@ -61,39 +35,70 @@ export interface PostsResponse {
 }
 
 class PostService {
-  async createPost(data: CreatePostDto): Promise<Post> {
-    const response = await httpClient.post('/api/posts', data);
-    return response.data;
-  }
+  private baseUrl = '/api/posts';
 
-  async getPosts(params?: {
-    communityId?: string;
+  async getPosts(params: {
     page?: number;
     limit?: number;
-    sort?: PostSort;
-  }): Promise<PostsResponse> {
-    const queryParams = new URLSearchParams();
-    
-    if (params?.communityId) {
-      queryParams.append('communityId', params.communityId);
-    }
-    if (params?.page) {
-      queryParams.append('page', params.page.toString());
-    }
-    if (params?.limit) {
-      queryParams.append('limit', params.limit.toString());
-    }
-    if (params?.sort) {
-      queryParams.append('sort', params.sort);
-    }
-
-    const response = await httpClient.get(`/api/posts?${queryParams.toString()}`);
+    sort?: string;
+    communityId?: string;
+  }): Promise<ApiResponse<Post>> {
+    const { page = 1, limit = 10, sort = 'hot', communityId } = params;
+    const response = await httpClient.get(`${this.baseUrl}?page=${page}&limit=${limit}&sort=${sort}${communityId ? `&communityId=${communityId}` : ''}`);
     return response.data;
   }
 
   async getPost(id: string): Promise<Post> {
-    const response = await httpClient.get(`/api/posts/${id}`);
+    const response = await httpClient.get(`${this.baseUrl}/${id}`);
     return response.data;
+  }
+
+  async createPost(data: {
+    title: string;
+    content: string;
+    type: 'text' | 'image' | 'link';
+    communityId: string;
+    imageUrl?: string;
+    linkUrl?: string;
+  }): Promise<Post> {
+    const response = await httpClient.post(this.baseUrl, data);
+    return response.data;
+  }
+
+  async upvotePost(postId: string): Promise<Post> {
+    try {
+      console.log('Making upvote request for post:', postId);
+      const response = await httpClient.post(`${this.baseUrl}/${postId}/upvote`);
+      console.log('Upvote response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in upvotePost:', error);
+      throw error;
+    }
+  }
+
+  async downvotePost(postId: string): Promise<Post> {
+    try {
+      console.log('Making downvote request for post:', postId);
+      const response = await httpClient.post(`${this.baseUrl}/${postId}/downvote`);
+      console.log('Downvote response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in downvotePost:', error);
+      throw error;
+    }
+  }
+
+  async removeVote(postId: string): Promise<Post> {
+    try {
+      console.log('Making remove vote request for post:', postId);
+      const response = await httpClient.delete(`${this.baseUrl}/${postId}/vote`);
+      console.log('Remove vote response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in removeVote:', error);
+      throw error;
+    }
   }
 }
 
