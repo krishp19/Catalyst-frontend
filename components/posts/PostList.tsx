@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PostCard } from '../../components/posts/PostCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Rocket, Flame, Clock, ChevronDown } from 'lucide-react';
+import { Rocket, Flame, Clock, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import {
   DropdownMenu,
@@ -12,27 +12,159 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
 import { Post } from '../../lib/types';
-import { mockPosts } from '../../lib/mock-data';
 import { Card } from '../../components/ui/card';
+import { postService } from '../../src/services/postService';
+import { useToast } from '../../hooks/use-toast';
+import { useInView } from 'react-intersection-observer';
 
 interface PostListProps {
   initialPosts?: Post[];
+  showJoinedCommunities?: boolean;
+  className?: string;
 }
 
-export const PostList = ({ initialPosts = mockPosts }: PostListProps) => {
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostListProps) => {
+  const [posts, setPosts] = useState<Post[]>(initialPosts || []);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>('new');
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const [timeFilter, setTimeFilter] = useState<string>("today");
+  const { toast } = useToast();
   
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: false,
+  });
+  
+  // Load more posts when scrolled to bottom
+  useEffect(() => {
+    if (inView && hasMore && !loading) {
+      handleLoadMore();
+    }
+  }, [inView, hasMore, loading]);
+  
+  const fetchPosts = useCallback(async (pageNum: number, sort: string, reset = false) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      
+      const response = showJoinedCommunities 
+        ? await postService.getJoinedCommunityPosts({
+            page: pageNum,
+            limit: 10,
+            sort
+          })
+        : await postService.getPosts({
+            page: pageNum,
+            limit: 10,
+            sort
+          });
+      
+      console.log('API Response:', response);
+      
+      // Ensure we have valid posts and update state
+      const items = Array.isArray(response?.items) ? response.items : [];
+      
+      // Map API response to Post type
+      const uiPosts: Post[] = items.map((apiPost: any) => ({
+        id: apiPost.id,
+        title: apiPost.title,
+        content: apiPost.content || '',
+        imageUrl: apiPost.imageUrl,
+        linkUrl: apiPost.linkUrl,
+        type: apiPost.type,
+        author: {
+          id: apiPost.author.id,
+          username: apiPost.author.username,
+          avatar: apiPost.author.avatarUrl || '',
+          karma: 0 // Default value since it's not in the API response
+        },
+        community: {
+          id: apiPost.community.id,
+          name: apiPost.community.name,
+          icon: apiPost.community.iconUrl || '',
+          description: apiPost.community.description || '',
+          members: apiPost.community.memberCount,
+          createdAt: apiPost.community.createdAt
+        },
+        votes: apiPost.score || 0,
+        upvotes: apiPost.upvotes || 0,
+        downvotes: apiPost.downvotes || 0,
+        commentCount: apiPost.commentCount || 0,
+        isPinned: apiPost.isPinned || false,
+        createdAt: apiPost.createdAt,
+        updatedAt: apiPost.updatedAt || apiPost.createdAt,
+        tags: apiPost.tags || []
+      }));
+      
+      setPosts(prev => reset ? uiPosts : [...prev, ...uiPosts]);
+      setHasMore(response?.meta?.currentPage < response?.meta?.totalPages);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+      setError('Failed to load posts. Please try again later.');
+      toast({
+        title: 'Error',
+        description: 'Failed to load posts',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [showJoinedCommunities, toast]);
+
+  // Initial load and when sort changes
+  useEffect(() => {
+    fetchPosts(1, sortBy, true);
+  }, [sortBy, showJoinedCommunities, fetchPosts]);
+  
+  // Sort posts by creation date (newest first) for display
+  const sortedPosts = useMemo(() => {
+    return [...posts].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [posts]);
+  
+  // Load more posts when scrolled to bottom or when manually triggered
+  const loadMorePosts = useCallback(() => {
+    if (hasMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchPosts(nextPage, sortBy, false);
+    }
+  }, [hasMore, loading, page, sortBy, fetchPosts]);
+
+  // Trigger load more when scroll reaches the bottom
+  useEffect(() => {
+    if (inView) {
+      loadMorePosts();
+    }
+  }, [inView, loadMorePosts]);
+  
+  const handleLoadMore = () => {
+    loadMorePosts();
+  };
+ 
+  const handleSortChange = (value: 'hot' | 'new' | 'top') => {
+    if (value === sortBy) return;
+    setSortBy(value);
+    setPage(1);
+  };
+
   const handleTimeFilterChange = (value: string) => {
     setTimeFilter(value);
-    // Here you would typically filter posts based on the selected time
-    // For demo purposes, we'll just keep the same posts
+    // TODO: Implement time-based filtering if needed
   };
   
   return (
     <div>
       <Card className="p-2 mb-4">
-        <Tabs defaultValue="hot" className="w-full">
+        <Tabs 
+          defaultValue="new" 
+          className="w-full"
+          onValueChange={(value) => handleSortChange(value as 'hot' | 'new' | 'top')}
+        >
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="hot" className="gap-1.5">
@@ -71,40 +203,71 @@ export const PostList = ({ initialPosts = mockPosts }: PostListProps) => {
                 <DropdownMenuItem onClick={() => handleTimeFilterChange("year")}>
                   This Year
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleTimeFilterChange("all")}>
-                  All Time
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
-          <TabsContent value="hot" className="mt-4 space-y-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+
+          <TabsContent value="hot">
+            <div className="space-y-4 mt-4">
+              {sortedPosts
+                .sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes))
+                .map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+            </div>
           </TabsContent>
           
-          <TabsContent value="new" className="mt-4 space-y-4">
-            {/* Sort posts by creation date, newest first */}
-            {[...posts]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((post) => (
+          <TabsContent value="new">
+            <div className="space-y-4 mt-4">
+              {sortedPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
-              ))
-            }
+              ))}
+            </div>
           </TabsContent>
           
-          <TabsContent value="top" className="mt-4 space-y-4">
-            {/* Sort posts by votes, highest first */}
-            {[...posts]
-              .sort((a, b) => b.votes - a.votes)
-              .map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))
-            }
+          <TabsContent value="top">
+            <div className="space-y-4 mt-4">
+              {sortedPosts
+                .sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes))
+                .map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+            </div>
           </TabsContent>
         </Tabs>
       </Card>
+
+      {loading && (
+        <div className="flex justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {!loading && hasMore && (
+        <div className="flex justify-center p-4">
+          <Button 
+            variant="outline" 
+            onClick={handleLoadMore}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Load More'}
+          </Button>
+        </div>
+      )}
+
+      {!loading && posts.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          No posts found. Be the first to create one!
+        </div>
+      )}
+
+      {error && (
+        <div className="text-center py-4 text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div ref={loadMoreRef} className="h-1" />
     </div>
   );
 };

@@ -42,9 +42,24 @@ class PostService {
     limit?: number;
     sort?: string;
     communityId?: string;
+    showJoinedCommunities?: boolean;
   }): Promise<ApiResponse<Post>> {
-    const { page = 1, limit = 10, sort = 'hot', communityId } = params;
-    const response = await httpClient.get(`${this.baseUrl}?page=${page}&limit=${limit}&sort=${sort}${communityId ? `&communityId=${communityId}` : ''}`);
+    const { page = 1, limit = 10, sort = 'hot', communityId, showJoinedCommunities = false } = params;
+    
+    let url = `${this.baseUrl}`;
+    
+    if (showJoinedCommunities) {
+      url += '/joined';
+    }
+    
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      sort,
+      ...(communityId && { communityId })
+    });
+    
+    const response = await httpClient.get(`${url}?${queryParams.toString()}`);
     return response.data;
   }
 
@@ -100,6 +115,18 @@ class PostService {
       throw error;
     }
   }
+
+  async getJoinedCommunityPosts(params: {
+    page?: number;
+    limit?: number;
+    sort?: string;
+  }): Promise<ApiResponse<Post>> {
+    const { page = 1, limit = 10, sort = 'hot' } = params;
+    const response = await httpClient.get(
+      `${this.baseUrl}/joined?page=${page}&limit=${limit}&sort=${sort}`
+    );
+    return response.data;
+  }
 }
 
-export const postService = new PostService(); 
+export const postService = new PostService();

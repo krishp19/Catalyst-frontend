@@ -118,29 +118,43 @@ export const httpClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: false, // Disable cookies for all requests
 });
 
 // Add request interceptor to include auth token
 httpClient.interceptors.request.use((config) => {
+  console.log('Request interceptor - original config:', config);
+  
   // Get token from localStorage
-  const persistRoot = localStorage.getItem('persist:root');
-  if (persistRoot) {
-    try {
-      const { auth } = JSON.parse(persistRoot);
-      const authState = JSON.parse(auth);
-      if (authState.accessToken) {
-        config.headers.Authorization = `Bearer ${authState.accessToken}`;
-        console.log('Added auth token to request:', config.headers.Authorization); // Debug log
+  try {
+    const persistRoot = localStorage.getItem('persist:root');
+    console.log('Retrieved persist:root from localStorage:', persistRoot ? 'exists' : 'does not exist');
+    
+    if (persistRoot) {
+      const parsed = JSON.parse(persistRoot);
+      console.log('Parsed persist:root:', parsed);
+      
+      if (parsed.auth) {
+        const authState = JSON.parse(parsed.auth);
+        console.log('Parsed auth state:', authState);
+        
+        if (authState.accessToken) {
+          config.headers.Authorization = `Bearer ${authState.accessToken}`;
+          console.log('Added auth token to request headers');
+        } else {
+          console.warn('No accessToken found in auth state');
+        }
       } else {
-        console.log('No access token found in auth state'); // Debug log
+        console.warn('No auth key in persist:root');
       }
-    } catch (error) {
-      console.error('Error parsing auth state:', error);
+    } else {
+      console.warn('No persist:root found in localStorage');
     }
-  } else {
-    console.log('No persist:root found in localStorage'); // Debug log
+  } catch (error) {
+    console.error('Error in request interceptor:', error);
   }
+  
+  console.log('Request interceptor - final config:', config);
   return config;
 });
 

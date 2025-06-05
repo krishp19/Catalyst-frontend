@@ -15,7 +15,7 @@ export default function Home() {
           {/* Main Content Area */}
           <div className="lg:col-span-3">
             <CreatePostBox />
-            <PostList />
+            <PostList showJoinedCommunities={true} />
           </div>
           
           {/* Sidebar/Right Column */}

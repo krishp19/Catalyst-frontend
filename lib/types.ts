@@ -19,14 +19,39 @@ export type ContentType = 'text' | 'image' | 'link';
 export interface Post {
   id: string;
   title: string;
-  content: string | Record<string, unknown>;
-  contentType: ContentType;
-  author: User;
-  community: Community;
+  content: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  type: 'text' | 'image' | 'link' | 'video' | 'poll' | 'article';
+  author: {
+    id: string;
+    username: string;
+    avatar: string;
+  };
+  community: {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    members: number;
+    createdAt: string;
+  };
   votes: number;
+  upvotes: number;
+  downvotes: number;
   commentCount: number;
+  isPinned: boolean;
   createdAt: string;
+  updatedAt: string;
   tags?: string[];
+  score?: number;
+  isSaved?: boolean;
+  isHidden?: boolean;
+  isLocked?: boolean;
+  isSpoiler?: boolean;
+  isNSFW?: boolean;
+  url?: string;
+  domain?: string;
 }
 
 export interface Comment {

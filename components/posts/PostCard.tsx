@@ -135,30 +135,45 @@ export const PostCard = ({ post }: PostCardProps) => {
             </div>
           )}
           
-          {post.contentType === 'text' && (
+          {post.type === 'text' && (
             <div className="text-sm mb-4 line-clamp-3">{post.content}</div>
           )}
           
-          {post.contentType === 'image' && (
-            <div className="mb-4 max-h-[400px] overflow-hidden rounded-md">
-              <img 
-                src={post.content as string} 
-                alt={post.title} 
-                className="w-full h-auto object-cover"
-              />
+          {post.type === 'image' && post.imageUrl && (
+            <div className="mb-4 rounded-md overflow-hidden border border-border max-w-[300px] mr-auto">
+              <div 
+                className="relative w-full" 
+                style={{ 
+                  paddingTop: '105.73%' /* 203/192 * 100% = 105.73% for 192:203 aspect ratio */
+                }}
+              >
+                <img 
+                  src={`${post.imageUrl}?w=384&h=406&c=fill`} // Smaller dimensions but same aspect ratio
+                  alt={post.title} 
+                  className="absolute inset-0 w-full h-full object-contain bg-muted p-1"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = '/placeholder-image.jpg';
+                  }}
+                />
+              </div>
             </div>
           )}
           
-          {post.contentType === 'link' && (
-            <a 
-              href={post.content as string} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-blue-500 hover:underline flex items-center mb-4"
-            >
-              <Link2 className="h-3 w-3 mr-1" />
-              {post.content as string}
-            </a>
+          {post.type === 'link' && post.linkUrl && (
+            <div className="mb-4">
+              <a 
+                href={post.linkUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline flex items-center text-sm"
+              >
+                <Link2 className="h-4 w-4 mr-1" />
+                {post.linkUrl}
+              </a>
+            </div>
           )}
           
           {/* Post Footer */}
