@@ -11,7 +11,8 @@ import {
   Link2,
   Flag,
   Eye,
-  EyeOff
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
@@ -29,25 +30,54 @@ import { Post } from '../../lib/types';
 import { Card } from '../../components/ui/card';
 import Link from 'next/link';
 
-interface PostCardProps {
-  post: Post;
+interface PostWithVote extends Post {
+  userVote?: 'up' | 'down' | null;
+  score?: number;
 }
 
-export const PostCard = ({ post }: PostCardProps) => {
-  const [votes, setVotes] = useState(post.votes);
-  const [voteStatus, setVoteStatus] = useState<'up' | 'down' | null>(null);
+interface PostCardProps {
+  post: PostWithVote;
+  onVote?: (postId: string, voteType: 'upvote' | 'downvote') => Promise<void>;
+  onRemoveVote?: (postId: string) => Promise<void>;
+  isVoting?: boolean;
+}
+
+export const PostCard = ({ 
+  post, 
+  onVote, 
+  onRemoveVote, 
+  isVoting = false 
+}: PostCardProps) => {
+  const [votes, setVotes] = useState(post.score || 0);
+  const [voteStatus, setVoteStatus] = useState<'up' | 'down' | null>(
+    post.userVote || null
+  );
   const [saved, setSaved] = useState(false);
 
-  const handleVote = (direction: 'up' | 'down') => {
-    if (voteStatus === direction) {
-      setVotes(votes + (direction === 'up' ? -1 : 1));
-      setVoteStatus(null);
-    } else {
-      const voteChange = direction === 'up' 
-        ? (voteStatus === 'down' ? 2 : 1) 
-        : (voteStatus === 'up' ? -2 : -1);
-      setVotes(votes + voteChange);
-      setVoteStatus(direction);
+  const handleVote = async (direction: 'up' | 'down') => {
+    if (isVoting) return;
+    
+    const newVoteStatus = voteStatus === direction ? null : direction;
+    
+    try {
+      if (newVoteStatus === null && onRemoveVote) {
+        await onRemoveVote(post.id);
+      } else if (onVote) {
+        await onVote(post.id, direction === 'up' ? 'upvote' : 'downvote');
+      }
+      
+      // Update local state optimistically
+      if (newVoteStatus === null) {
+        setVotes(voteStatus === 'up' ? votes - 1 : votes + 1);
+      } else if (voteStatus === null) {
+        setVotes(direction === 'up' ? votes + 1 : votes - 1);
+      } else {
+        setVotes(direction === 'up' ? votes + 2 : votes - 2);
+      }
+      
+      setVoteStatus(newVoteStatus);
+    } catch (error) {
+      console.error('Error handling vote:', error);
     }
   };
 
@@ -64,12 +94,17 @@ export const PostCard = ({ post }: PostCardProps) => {
             variant="ghost" 
             size="icon" 
             className={cn(
-              "rounded-full h-8 w-8 p-0",
-              voteStatus === 'up' && "text-orange-500 dark:text-orange-400"
+              "h-8 w-8 p-0 hover:bg-transparent hover:text-orange-500",
+              voteStatus === 'up' && "text-orange-500"
             )}
             onClick={() => handleVote('up')}
+            disabled={isVoting}
           >
-            <ArrowUp className="h-5 w-5" />
+            {isVoting && voteStatus === 'up' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowUp className="h-4 w-4" />
+            )}
             <span className="sr-only">Upvote</span>
           </Button>
           
@@ -85,12 +120,17 @@ export const PostCard = ({ post }: PostCardProps) => {
             variant="ghost" 
             size="icon" 
             className={cn(
-              "rounded-full h-8 w-8 p-0",
-              voteStatus === 'down' && "text-blue-500 dark:text-blue-400"
+              "h-8 w-8 p-0 hover:bg-transparent hover:text-blue-500",
+              voteStatus === 'down' && "text-blue-500"
             )}
             onClick={() => handleVote('down')}
+            disabled={isVoting}
           >
-            <ArrowDown className="h-5 w-5" />
+            {isVoting && voteStatus === 'down' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
             <span className="sr-only">Downvote</span>
           </Button>
         </div>

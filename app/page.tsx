@@ -1,6 +1,7 @@
 import React from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import { PostList } from '../components/posts/PostList';
+import { MorePosts } from '../components/posts/MorePosts';
 import { CreatePostBox } from '../components/posts/CreatePostBox';
 import { CommunityInfo } from '../components/communities/CommunityInfo';
 import { TopCommunities } from '../components/communities/TopCommunities';
@@ -13,9 +14,14 @@ export default function Home() {
       <div className="flex-1 p-4">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content Area */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-6">
             <CreatePostBox />
-            <PostList showJoinedCommunities={true} />
+            <div className="space-y-6">
+              <PostList showJoinedCommunities={true} />
+              <div className="mt-8">
+                <MorePosts limit={5} />
+              </div>
+            </div>
           </div>
           
           {/* Sidebar/Right Column */}

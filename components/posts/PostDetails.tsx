@@ -198,12 +198,23 @@ export function PostDetails({ post }: PostDetailsProps) {
           )}
           
           {post.type === 'image' && post.imageUrl && (
-            <div className="mb-4 rounded-md overflow-hidden">
-              <img 
-                src={post.imageUrl} 
-                alt={post.title} 
-                className="w-full h-auto"
-              />
+            <div className="mb-4 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <div className="max-w-2xl w-full">
+                <div className="relative pt-[56.25%] w-full">
+                  <img 
+                    src={post.imageUrl} 
+                    alt={post.title} 
+                    className="absolute top-0 left-0 w-full h-full object-contain"
+                    style={{
+                      maxHeight: '600px',
+                      width: 'auto',
+                      maxWidth: '100%',
+                      margin: '0 auto',
+                      display: 'block'
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
           

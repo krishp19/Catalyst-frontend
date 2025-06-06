@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Input } from '../../components/ui/input';
@@ -10,20 +11,36 @@ import { Card } from '../../components/ui/card';
 import defaultAvatar from '../../assets/avatar.webp';
 
 export const CreatePostBox = () => {
+  const router = useRouter();
   const { user, setIsLoginModalOpen } = useAuth();
   
-  const handleCreatePost = () => {
+  const handleCreatePost = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling to the parent
+    
     if (!user) {
       setIsLoginModalOpen(true);
       return;
     }
     
-    // In a real app, this would open a post creation form or navigate to a post creation page
-    alert('Create post functionality would open here');
+    // Use window.location for immediate navigation
+    window.location.href = '/create-post';
+  };
+  
+  const handleContainerClick = () => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    
+    // Use window.location for immediate navigation
+    window.location.href = '/create-post';
   };
   
   return (
-    <Card className="p-3 mb-4">
+    <Card 
+      className="p-3 mb-4 cursor-pointer hover:bg-accent/50 transition-colors"
+      onClick={handleContainerClick}
+    >
       <div className="flex items-center gap-3">
         <Avatar className="h-9 w-9">
           {user ? (
@@ -39,13 +56,19 @@ export const CreatePostBox = () => {
         <Input 
           placeholder="Create Post" 
           className="bg-muted cursor-pointer"
-          onClick={handleCreatePost}
+          onClick={handleContainerClick}
           readOnly
         />
       </div>
       
       <div className="flex justify-between mt-3">
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleCreatePost}>
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="gap-1.5 hover:bg-background"
+          onClick={handleCreatePost}
+        >
           <Image className="h-4 w-4" />
           <span className="hidden sm:inline">Image</span>
         </Button>
