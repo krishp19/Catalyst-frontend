@@ -35,7 +35,7 @@ export interface ApiResponse<T> {
 }
 
 class PostService {
-  private baseUrl = '/api/posts';
+  private baseUrl = '/posts';
 
   async getPosts(params: {
     page?: number;
@@ -126,6 +126,17 @@ class PostService {
       `${this.baseUrl}/joined?page=${page}&limit=${limit}&sort=${sort}`
     );
     return response.data;
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    try {
+      console.log('Deleting post:', postId);
+      await httpClient.delete(`${this.baseUrl}/${postId}`);
+      console.log('Post deleted successfully');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
   }
 }
 

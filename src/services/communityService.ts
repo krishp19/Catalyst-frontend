@@ -44,7 +44,7 @@ export interface ApiErrorResponse {
 }
 
 class CommunityService {
-  private baseUrl = '/api/communities';
+  private baseUrl = '/communities';
 
   async getCommunities(page = 1, limit = 10): Promise<ApiResponse<Community>> {
     const response = await httpClient.get(`${this.baseUrl}?page=${page}&limit=${limit}`);
@@ -113,7 +113,7 @@ class CommunityService {
    * @returns Array of communities the current user has joined
    */
   async getMyJoinedCommunities(): Promise<Community[]> {
-    const response = await httpClient.get('/api/users/me/communities');
+    const response = await httpClient.get('/users/me/communities');
     return response.data;
   }
 }

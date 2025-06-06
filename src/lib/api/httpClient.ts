@@ -113,48 +113,44 @@ export class HttpClient {
   }
 }
 
-export const httpClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+// Create axios instance with default config
+const httpClient = axios.create({
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api',
+  withCredentials: true, // Enable credentials (cookies, HTTP authentication)
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: false, // Disable cookies for all requests
 });
 
 // Add request interceptor to include auth token
 httpClient.interceptors.request.use((config) => {
-  console.log('Request interceptor - original config:', config);
-  
-  // Get token from localStorage
-  try {
-    const persistRoot = localStorage.getItem('persist:root');
-    console.log('Retrieved persist:root from localStorage:', persistRoot ? 'exists' : 'does not exist');
-    
-    if (persistRoot) {
-      const parsed = JSON.parse(persistRoot);
-      console.log('Parsed persist:root:', parsed);
-      
-      if (parsed.auth) {
-        const authState = JSON.parse(parsed.auth);
-        console.log('Parsed auth state:', authState);
-        
-        if (authState.accessToken) {
-          config.headers.Authorization = `Bearer ${authState.accessToken}`;
-          console.log('Added auth token to request headers');
-        } else {
-          console.warn('No accessToken found in auth state');
-        }
-      } else {
-        console.warn('No auth key in persist:root');
-      }
-    } else {
-      console.warn('No persist:root found in localStorage');
-    }
-  } catch (error) {
-    console.error('Error in request interceptor:', error);
+  // Skip if we're in SSR
+  if (typeof window === 'undefined') {
+    return config;
   }
   
-  console.log('Request interceptor - final config:', config);
+  try {
+    // Get the persisted auth state from localStorage
+    const persistRoot = localStorage.getItem('persist:root');
+    if (!persistRoot) return config;
+    
+    // Parse the persisted state
+    const parsedRoot = JSON.parse(persistRoot);
+    if (!parsedRoot.auth) return config;
+    
+    // Parse the auth state
+    const authState = JSON.parse(parsedRoot.auth);
+    
+    // Get the access token
+    const accessToken = authState?.accessToken;
+    
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+  } catch (error) {
+    console.error('Error parsing auth state:', error);
+  }
+  
   return config;
 });
 
@@ -169,3 +165,5 @@ httpClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export { httpClient };

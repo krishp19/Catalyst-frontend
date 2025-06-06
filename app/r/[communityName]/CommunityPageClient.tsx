@@ -27,7 +27,8 @@ import {
   Link as LinkIcon,
   Bookmark,
   FileText,
-  MessageSquareMore
+  MessageSquareMore,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -41,7 +42,12 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
   const [isMember, setIsMember] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<Post[]>([]);
+  // Extend Post type to include showOptions for dropdown
+  interface ExtendedPost extends Post {
+    showOptions?: boolean;
+  }
+
+  const [posts, setPosts] = useState<ExtendedPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -183,6 +189,22 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
     } finally {
       console.log('Join/Leave operation completed, isMember:', isMember);
       setIsProcessing(false);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await postService.deletePost(postId);
+      // Remove the deleted post from the list
+      setPosts(posts.filter(post => post.id !== postId));
+      toast.success('Post deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete post');
     }
   };
 
@@ -429,9 +451,57 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                                 </div>
                               </div>
                             </div>
-                            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                              <DotsHorizontalIcon className="w-5 h-5" />
-                            </button>
+                            <div className="relative">
+                              <button 
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Toggle dropdown
+                                  setPosts(posts.map(p => 
+                                    p.id === post.id 
+                                      ? { ...p, showOptions: !p.showOptions } 
+                                      : { ...p, showOptions: false }
+                                  ));
+                                }}
+                              >
+                                <MoreHorizontal className="w-5 h-5" />
+                              </button>
+                              
+                              {/* Dropdown menu */}
+                              {post.showOptions && (
+                                <div 
+                                  className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {console.log('User ID:', user?.id, 'Community Creator ID:', community?.creator?.id, 'Is Owner:', user?.id === community?.creator?.id)}
+                                  {user?.id === community?.creator?.id && (
+                                    <>
+                                      <button
+                                        onClick={() => handleDeletePost(post.id)}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Post
+                                      </button>
+                                      <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    </>
+                                  )}
+                                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    <Share2 className="w-4 h-4 mr-2" />
+                                    Share
+                                  </button>
+                                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    <Bookmark className="w-4 h-4 mr-2" />
+                                    Save
+                                  </button>
+                                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    <Flag className="w-4 h-4 mr-2" />
+                                    Report
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
