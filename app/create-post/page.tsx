@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { postService, PostType } from '../../src/services/postService';
 import { communityService, Community } from '../../src/services/communityService';
+import { tagService } from '../../src/services/tag.service';
+import { Tag } from '../../src/types/tag.types';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { RichTextEditor } from '../../components/editor/RichTextEditor';
@@ -47,7 +49,13 @@ export default function CreatePostPage() {
     content: '',
     imageUrl: '',
     linkUrl: '',
+    tags: [] as string[],
   });
+  const [tagSearch, setTagSearch] = useState('');
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const tagSearchRef = useRef<HTMLInputElement>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchCommunities = async () => {
@@ -73,25 +81,63 @@ export default function CreatePostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
     if (!selectedCommunity) {
       toast.error('Please select a community');
       return;
     }
 
+    if (!formData.title.trim()) {
+      toast.error('Please enter a title');
+      return;
+    }
+
+    if (postType === PostType.TEXT && !formData.content.trim()) {
+      toast.error('Please enter post content');
+      return;
+    }
+
+    if (postType === PostType.IMAGE && !formData.imageUrl) {
+      toast.error('Please upload an image');
+      return;
+    }
+
+    if (postType === PostType.LINK && !formData.linkUrl) {
+      toast.error('Please enter a link URL');
+      return;
+    }
+
     setSubmitting(true);
     try {
+      // Prepare the post data according to the backend's expected format
       const postData = {
-        ...formData,
+        title: formData.title,
+        content: formData.content,
+        imageUrl: formData.imageUrl || null,
+        linkUrl: formData.linkUrl || null,
         type: postType,
         communityId: selectedCommunity,
+        tags: formData.tags,
       };
 
-      await postService.createPost(postData);
-      toast.success('Post created successfully');
-      router.push(`/r/${communities.find(c => c.id === selectedCommunity)?.name}`);
-    } catch (error) {
-      toast.error('Failed to create post');
+      console.log('Submitting post data:', postData);
+      
+      // Create the post with all data including tags
+      
+      toast.success('Post created successfully!');
+      
+      // Redirect to the community page after successful post creation
+      const community = communities.find(c => c.id === selectedCommunity);
+      if (community) {
+        router.push(`/r/${community.name}`);
+      } else {
+        router.push('/');
+      }
+    } catch (error: any) {
       console.error('Error creating post:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create post';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -109,6 +155,61 @@ export default function CreatePostPage() {
   const handleTitleChange = (value: string) => {
     setFormData(prev => ({ ...prev, title: value }));
   };
+
+  // Handle tag selection from dropdown
+  const handleTagSelect = (tagName: string) => {
+    if (!formData.tags.includes(tagName) && formData.tags.length < 5) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagName]
+      }));
+    }
+    setTagSearch('');
+    setShowTagDropdown(false);
+  };
+
+  // Handle tag removal
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node) &&
+          tagSearchRef.current && !tagSearchRef.current.contains(event.target as Node)) {
+        setShowTagDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search for tags when input changes
+  useEffect(() => {
+    const searchTags = async () => {
+      if (tagSearch.trim().length > 0) {
+        try {
+          const results = await tagService.getTags(tagSearch);
+          setAvailableTags(results);
+          setShowTagDropdown(true);
+        } catch (error) {
+          console.error('Error searching tags:', error);
+          setAvailableTags([]);
+        }
+      } else {
+        setAvailableTags([]);
+        setShowTagDropdown(false);
+      }
+    };
+
+    const timer = setTimeout(searchTags, 300);
+    return () => clearTimeout(timer);
+  }, [tagSearch]);
 
   if (loading) {
     return (
@@ -260,6 +361,63 @@ export default function CreatePostPage() {
                   </TabsContent>
                 </Tabs>
 
+                {/* Tags Input */}
+                <div className="mt-6 space-y-2 relative" ref={tagDropdownRef}>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Tags {formData.tags.length > 0 && `(${formData.tags.length}/5)`}
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Add tags (max 5)"
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      onFocus={() => tagSearch.trim() && setShowTagDropdown(true)}
+                      className="border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200"
+                      ref={tagSearchRef}
+                      disabled={formData.tags.length >= 5}
+                    />
+                    {showTagDropdown && availableTags.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {availableTags.map((tag) => (
+                          <div
+                            key={tag.id}
+                            className="px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-900 dark:text-gray-100"
+                            onClick={() => handleTagSelect(tag.name)}
+                          >
+                            {tag.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.tags.map((tag) => (
+                        <div
+                          key={tag}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(tag)}
+                            className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-orange-200 dark:bg-orange-800/50 hover:bg-orange-300 dark:hover:bg-orange-700/70"
+                          >
+                            <span className="sr-only">Remove tag</span>
+                            <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
+                              <path strokeLinecap="round" strokeWidth="1.5" d="M1 1l6 6m0-6L1 7" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Add up to 5 tags to help others find your post
+                  </p>
+                </div>
+
                 {/* Submit Button */}
                 <Button
                   type="submit"
@@ -282,4 +440,4 @@ export default function CreatePostPage() {
       </div>
     </div>
   );
-} 
+}

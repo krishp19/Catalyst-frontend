@@ -48,7 +48,7 @@ export interface UpdateProfileData {
 export const authService = {
   async signup(data: SignupData): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await httpClient.post<AuthResponse>('/api/auth/register', data);
+      const response = await httpClient.post<AuthResponse>('/auth/register', data);
       return { data: response.data };
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -63,7 +63,7 @@ export const authService = {
 
   async login(data: LoginData): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await httpClient.post<AuthResponse>('/api/auth/login', data);
+      const response = await httpClient.post<AuthResponse>('/auth/login', data);
       return { data: response.data };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -78,7 +78,7 @@ export const authService = {
 
   async getProfile(): Promise<ApiResponse<User>> {
     try {
-      const response = await httpClient.get<User>('/api/users/profile');
+      const response = await httpClient.get<User>('/users/profile');
       return { data: response.data };
     } catch (error: any) {
       console.error('Get profile error:', error);

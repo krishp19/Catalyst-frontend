@@ -37,7 +37,7 @@ export interface CommentResponse {
 }
 
 class CommentService {
-  private baseUrl = '/api/comments';
+  private baseUrl = '/comments';
 
   async createComment(data: CreateCommentData): Promise<Comment> {
     try {

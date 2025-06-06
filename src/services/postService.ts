@@ -21,6 +21,7 @@ export interface CreatePostDto {
   linkUrl?: string;
   type: PostType;
   communityId: string;
+  tags?: string[];
 }
 
 export interface ApiResponse<T> {
@@ -68,16 +69,24 @@ class PostService {
     return response.data;
   }
 
-  async createPost(data: {
-    title: string;
-    content: string;
-    type: 'text' | 'image' | 'link';
-    communityId: string;
-    imageUrl?: string;
-    linkUrl?: string;
-  }): Promise<Post> {
-    const response = await httpClient.post(this.baseUrl, data);
-    return response.data;
+  async createPost(data: CreatePostDto): Promise<Post> {
+    try {
+      console.log('Creating post with data:', data);
+      const response = await httpClient.post(this.baseUrl, {
+        title: data.title,
+        content: data.content || null,
+        imageUrl: data.imageUrl || null,
+        linkUrl: data.linkUrl || null,
+        type: data.type,
+        communityId: data.communityId,
+        tags: data.tags || [],
+      });
+      console.log('Post created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
   }
 
   async upvotePost(postId: string): Promise<Post> {
