@@ -79,4 +79,90 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Rich Text Editor Styles */
+  .ProseMirror {
+    @apply min-h-[200px] outline-none;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    @apply text-muted-foreground/50 pointer-events-none h-0 float-left;
+    content: attr(data-placeholder);
+  }
+
+  .ProseMirror p {
+    @apply my-2;
+  }
+
+  .ProseMirror h1 {
+    @apply text-3xl font-bold my-4;
+  }
+
+  .ProseMirror h2 {
+    @apply text-2xl font-bold my-3;
+  }
+
+  .ProseMirror h3 {
+    @apply text-xl font-bold my-2;
+  }
+
+  .ProseMirror ul,
+  .ProseMirror ol {
+    @apply my-2 pl-6;
+  }
+
+  .ProseMirror ul {
+    @apply list-disc;
+  }
+
+  .ProseMirror ol {
+    @apply list-decimal;
+  }
+
+  .ProseMirror blockquote {
+    @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 py-1 my-2 italic;
+  }
+
+  .ProseMirror pre {
+    @apply bg-gray-100 dark:bg-gray-800 p-4 rounded-md my-2 overflow-x-auto;
+  }
+
+  .ProseMirror code {
+    @apply bg-gray-100 dark:bg-gray-800 text-red-500 px-1 py-0.5 rounded text-sm font-mono;
+  }
+
+  .ProseMirror img {
+    @apply max-w-full h-auto my-2 rounded-md;
+  }
+
+  .ProseMirror a {
+    @apply text-blue-500 hover:underline;
+  }
+
+  .ProseMirror .is-empty::before {
+    @apply text-muted-foreground/50 pointer-events-none h-0 float-left;
+    content: attr(data-placeholder);
+  }
+
+  /* Custom scrollbar for the editor */
+  .ProseMirror {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+  }
+
+  .dark .ProseMirror {
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  .ProseMirror::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  .ProseMirror::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded;
+  }
+
+  .ProseMirror::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-500;
+  }
 }

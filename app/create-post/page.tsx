@@ -7,7 +7,7 @@ import { postService, PostType } from '../../src/services/postService';
 import { communityService, Community } from '../../src/services/communityService';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Textarea } from '../../components/ui/textarea';
+import { RichTextEditor } from '../../components/editor/RichTextEditor';
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
+import { EmojiTitleInput } from 'components/editor/EmojiTitleInput';
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -103,6 +104,10 @@ export default function CreatePostPage() {
 
   const handleImageUpload = (url: string) => {
     setFormData(prev => ({ ...prev, imageUrl: url }));
+  };
+
+  const handleTitleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, title: value }));
   };
 
   if (loading) {
@@ -212,28 +217,25 @@ export default function CreatePostPage() {
                     </TabsTrigger>
                   </TabsList>
 
-                  {/* Title Input (Common for all types) */}
+                  {/* Title Input with Emoji Picker */}
                   <div className="mt-6">
-                    <Input
-                      name="title"
-                      placeholder="Give your post a title"
+                    <EmojiTitleInput
                       value={formData.title}
-                      onChange={handleInputChange}
-                      className="border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200"
+                      onChange={handleTitleChange}
+                      placeholder="Give your post a title"
                       required
                     />
                   </div>
 
                   {/* Content based on post type */}
                   <TabsContent value={PostType.TEXT} className="mt-4">
-                    <Textarea
-                      name="content"
-                      placeholder="What's on your mind?"
-                      value={formData.content}
-                      onChange={handleInputChange}
-                      className="min-h-[200px] border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200"
-                      required
-                    />
+                    <div className="mt-2">
+                      <RichTextEditor
+                        content={formData.content}
+                        onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                        placeholder="Write your post content here..."
+                      />
+                    </div>
                   </TabsContent>
 
                   <TabsContent value={PostType.IMAGE} className="mt-4">
