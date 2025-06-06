@@ -16,6 +16,14 @@ export interface Community {
 
 export type ContentType = 'text' | 'image' | 'link';
 
+export interface Tag {
+  id: string;
+  name: string;
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Post {
   id: string;
   title: string;
@@ -41,9 +49,9 @@ export interface Post {
   downvotes: number;
   commentCount: number;
   isPinned: boolean;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
-  tags?: string[];
   score?: number;
   isSaved?: boolean;
   isHidden?: boolean;

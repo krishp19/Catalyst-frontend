@@ -61,12 +61,27 @@ class PostService {
     });
     
     const response = await httpClient.get(`${url}?${queryParams.toString()}`);
-    return response.data;
+    const apiResponse = response.data;
+    // Transform tags in each post
+    const transformedPosts = apiResponse.items.map((post: { tags: { name: string; }[]; }) => ({
+      ...post,
+      tags: post.tags?.map((tag: { name: string }) => tag.name) || []
+    }));
+    return {
+      ...apiResponse,
+      items: transformedPosts
+    };
   }
 
   async getPost(id: string): Promise<Post> {
     const response = await httpClient.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    const post = response.data;
+    // Transform tags into an array of strings
+    const transformedPost = {
+      ...post,
+      tags: post.tags?.map((tag: { name: any; }) => tag.name) || []
+    };
+    return transformedPost;
   }
 
   async createPost(data: CreatePostDto): Promise<Post> {

@@ -184,8 +184,8 @@ export function PostDetails({ post }: PostDetailsProps) {
           {/* Post Tags */}
           {post.tags && post.tags.length > 0 && (
             <div className="flex gap-2 mb-4">
-              {post.tags.map((tag, index) => (
-                <Badge key={index} variant="secondary">
+              {post.tags.map((tag: string) => (
+                <Badge key={tag} variant="secondary">
                   {tag}
                 </Badge>
               ))}

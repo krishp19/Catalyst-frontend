@@ -18,18 +18,15 @@ type PostWithVote = Post & {
   author: {
     id: string;
     username: string;
-    avatar?: string;
-    avatarUrl?: string;
+    avatar: string;
     karma: number;
   };
   community: {
     id: string;
     name: string;
     description: string;
-    icon?: string;
-    iconUrl?: string;
+    icon: string;
     members: number;
-    memberCount?: number;
     createdAt: string;
   };
   userVote?: 'up' | 'down' | null;
@@ -39,7 +36,7 @@ type PostWithVote = Post & {
   commentCount?: number;
   isPinned?: boolean;
   updatedAt?: string;
-  tags?: string[];
+  tags: string[];
 };
 import { Card } from '../../components/ui/card';
 import { postService } from '../../src/services/postService';
@@ -47,7 +44,7 @@ import { voteService } from '../../src/services/voteService';
 import { useToast } from '../../hooks/use-toast';
 import { useInView } from 'react-intersection-observer';
 import { useAuth } from '../../src/hooks/useAuth';
-import { toast } from 'sonner';
+
 
 interface PostListProps {
   initialPosts?: Post[];
@@ -81,7 +78,13 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
       commentCount: (post as any).commentCount || 0,
       isPinned: (post as any).isPinned || false,
       updatedAt: (post as any).updatedAt || post.createdAt,
-      tags: (post as any).tags || []
+      tags: (post as any).tags?.map((tag: { id: string; name: string; usageCount: number; createdAt: string; updatedAt: string }) => ({
+        id: tag.id,
+        name: tag.name,
+        usageCount: tag.usageCount,
+        createdAt: tag.createdAt,
+        updatedAt: tag.updatedAt
+      })) || []
     } as PostWithVote));
   });
   const { user, setIsLoginModalOpen } = useAuth();
@@ -173,12 +176,16 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
-      toast.error('Failed to load posts');
+      toast({
+      title: "Error",
+      description: "Failed to load posts",
+      variant: "destructive"
+    });
     } finally {
       setLoading(false);
     }
   }, [showJoinedCommunities, toast]);
-
+  
   // Initial load and when sort changes
   useEffect(() => {
     fetchPosts(1, sortBy, true);
@@ -241,7 +248,11 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
       ));
     } catch (error) {
       console.error('Error voting:', error);
-      toast.error('Failed to submit vote. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to submit vote. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setVotingStates(prev => ({ ...prev, [postId]: false }));
     }
@@ -272,7 +283,11 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
       ));
     } catch (error) {
       console.error('Error removing vote:', error);
-      toast.error('Failed to remove vote. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to remove vote. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setVotingStates(prev => ({ ...prev, [postId]: false }));
     }
@@ -296,7 +311,10 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
         </Card>
       ) : mostRecentPost ? (
         <PostCard 
-          post={mostRecentPost} 
+          post={{
+            ...mostRecentPost,
+            tags: mostRecentPost.tags?.map((tag: string | { name: string }) => typeof tag === 'string' ? tag : tag?.name || '') || []
+          }}
           onVote={handleVote}
           onRemoveVote={handleRemoveVote}
           isVoting={votingStates[mostRecentPost.id] || false}

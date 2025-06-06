@@ -93,7 +93,7 @@ export const authService = {
 
   async updateProfile(data: UpdateProfileData): Promise<ApiResponse<User>> {
     try {
-      const response = await httpClient.patch<User>('/api/users/profile', data);
+      const response = await httpClient.patch<User>('/users/profile', data);
       return { data: response.data };
     } catch (error: any) {
       console.error('Update profile error:', error);

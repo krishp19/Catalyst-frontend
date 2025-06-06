@@ -9,7 +9,7 @@ interface VoteInfo {
   score?: number;
 }
 
-type PostWithVote = Omit<Post, 'author' | 'community'> & {
+type PostWithVote = Omit<Post, 'author' | 'community' | 'tags'> & {
   author: {
     id: string;
     username: string;
@@ -23,6 +23,7 @@ type PostWithVote = Omit<Post, 'author' | 'community'> & {
     members: number;
     createdAt: string;
   };
+  tags: string[];
 } & VoteInfo;
 import { PostCard } from './PostCard';
 import { Button } from '../ui/button';
@@ -75,7 +76,7 @@ export function MorePosts({ excludePostId, limit = 5, communityId }: MorePostsPr
         votes: post.score || 0,
         commentCount: post.commentCount || 0,
         isPinned: post.isPinned || false,
-        tags: post.tags || []
+        tags: post.tags?.map((tag: { id: string; name: string; usageCount: number; createdAt: string; updatedAt: string }) => tag.name) || []
       }));
 
       const filteredPosts = excludePostId

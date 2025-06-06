@@ -167,9 +167,9 @@ export const PostCard = ({
           {/* Post Content */}
           {post.tags && post.tags.length > 0 && (
             <div className="flex gap-2 mb-3">
-              {post.tags.map((tag, index) => (
-                <Badge key={index} variant="secondary" className="px-2 py-0 text-xs">
-                  {tag}
+              {post.tags.map((tag: string | { name: string }) => (
+                <Badge key={typeof tag === 'string' ? tag : tag?.name || ''} variant="secondary" className="px-2 py-0 text-xs">
+                  {typeof tag === 'string' ? tag : tag?.name || 'Unknown'}
                 </Badge>
               ))}
             </div>
