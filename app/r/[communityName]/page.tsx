@@ -3,19 +3,10 @@ import CommunityPageClient from './CommunityPageClient';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
-// This is required for static exports
 export async function generateStaticParams() {
-  // Fetch popular communities to pre-render at build time
-  try {
-    const response = await fetch('http://localhost:3000/api/communities/popular');
-    const communities = await response.json();
-    return communities.map((community: { name: string }) => ({
-      communityName: community.name,
-    }));
-  } catch (error) {
-    console.error('Error generating static params for communities:', error);
-    return [];
-  }
+  // Return an empty array to opt-out of static generation at build time
+  // Pages will be generated on first request and then cached
+  return [];
 }
 
 export default async function CommunityPage({ 

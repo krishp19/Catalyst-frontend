@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../../..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./components/*"],
+      "@/hooks/*": ["../../hooks/*"],
+      "@/store/*": ["../../src/store/*"]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

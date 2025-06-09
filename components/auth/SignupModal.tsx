@@ -290,6 +290,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 variant="link" 
                 className="p-0 h-auto" 
                 onClick={handleLoginClick}
+                data-testid="login-button"
               >
                 Log in
               </Button>
