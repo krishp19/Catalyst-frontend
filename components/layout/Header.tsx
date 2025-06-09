@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image, Users, Star, LogOut, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -21,17 +22,16 @@ import { cn } from '../../lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { MobileSidebar } from './MobileSidebar';
 import defaultAvatar from '../../assets/avatar.webp';
-import { CreateCommunityModal } from '../communities/CreateCommunityModal';
 
 const Header = () => {
+  const router = useRouter();
   const { user, isAuthenticated } = useAppSelector((state: any) => state.auth);
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
-  const [isCreateCommunityModalOpen, setIsCreateCommunityModalOpen] = React.useState(false);
   const dispatch = useAppDispatch();
-  
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -65,13 +65,13 @@ const Header = () => {
           <div className="flex items-center gap-2 md:gap-4 ml-auto">
             {isAuthenticated && (
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="hidden md:flex items-center gap-2"
-                onClick={() => setIsCreateCommunityModalOpen(true)}
+                className="hidden md:flex items-center gap-2 bg-gradient-to-br from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600 transition-all duration-200 px-4 py-2 rounded-full shadow-md hover:shadow-lg active:scale-95"
+                onClick={() => router.push('/create-post')}
               >
-                <Plus className="h-4 w-4" />
-                <span>Create</span>
+                <Plus className="h-5 w-5" />
+                <span className="font-medium">Create Post</span>
               </Button>
             )}
 
@@ -179,10 +179,6 @@ const Header = () => {
           setIsSignupModalOpen(false);
           setIsLoginModalOpen(true);
         }}
-      />
-      <CreateCommunityModal
-        open={isCreateCommunityModalOpen}
-        onOpenChange={setIsCreateCommunityModalOpen}
       />
     </>
   );
