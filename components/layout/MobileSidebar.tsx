@@ -3,7 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '../../lib/utils';
-import { Home, TrendingUp as Trending, Rocket, Gamepad2, Music, Film, BookOpen, Image, Users, Plus, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
+import { Home, TrendingUp as Trending, Rocket, Gamepad2, Music, Film, BookOpen, Image as ImageIcon, Users, Plus, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
 import { Separator } from '../../components/ui/separator';
 import { Button } from '../../components/ui/button';
 import { ScrollArea } from '../../components/ui/scroll-area';
@@ -149,7 +149,7 @@ export const MobileSidebar = () => {
             active={isActive('/topic/books')} 
           />
           <SidebarItem 
-            icon={<Image className="h-4 w-4" />} 
+            icon={<ImageIcon className="h-4 w-4" aria-hidden="true" />} 
             label="Art" 
             href="/topic/art" 
             active={isActive('/topic/art')} 

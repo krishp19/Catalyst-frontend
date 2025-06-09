@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Comment, CommentResponse } from '../../src/services/commentService';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
@@ -53,7 +53,7 @@ export const CommentSection = ({ postId }: CommentSectionProps) => {
     return commentTree;
   };
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await commentService.getComments(postId, 1, 50);
@@ -65,11 +65,11 @@ export const CommentSection = ({ postId }: CommentSectionProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId]);
 
   useEffect(() => {
     fetchComments();
-  }, [postId]);
+  }, [fetchComments]);
 
   const handleAddComment = async (content: string) => {
     if (!user) return;

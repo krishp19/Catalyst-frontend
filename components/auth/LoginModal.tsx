@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,7 +53,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Handle both controlled and uncontrolled open state
   const isControlled = externalOpen !== undefined;
   const open = isControlled ? externalOpen : isOpen;
-  const setOpen = isControlled ? setExternalOpen || (() => {}) : setIsOpen;
+  
+  // Memoize setOpen to prevent it from changing on every render
+  const setOpen = useMemo(() => {
+    return isControlled ? (setExternalOpen || (() => {})) : setIsOpen;
+  }, [isControlled, setExternalOpen, setIsOpen]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -169,7 +173,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         </Form>
         <div className="mt-4 text-center text-sm">
           <p className="text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Button variant="link" className="p-0" onClick={handleSignupClick}>
               Sign up
             </Button>

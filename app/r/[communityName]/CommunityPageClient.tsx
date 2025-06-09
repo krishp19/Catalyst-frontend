@@ -178,13 +178,37 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
           throw error;
         }
       }
-    } catch (error) {
+    } catch (err: unknown) {
       const action = isMember ? 'leave' : 'join';
-      console.error(`Error ${action}ing community:`, error);
+      console.error(`Error ${action}ing community:`, err);
       
+      // Define the error shape we expect from the API
+      interface ApiError extends Error {
+        response?: {
+          status?: number;
+          data?: {
+            message?: string;
+          };
+        };
+      }
+      
+      // Type guard to check if error is an ApiError
+      const isApiError = (error: unknown): error is ApiError => {
+        return (
+          typeof error === 'object' && 
+          error !== null && 
+          'response' in error &&
+          (error as { response?: unknown }).response !== null &&
+          typeof (error as { response?: unknown }).response === 'object'
+        );
+      };
+
       // Skip showing error toast for 409 Conflict as we handle it above
-      if (error.response?.status !== 409) {
-        toast.error(`Failed to ${action} community: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+      if (isApiError(err) && err.response?.status !== 409) {
+        const errorMessage = 
+          (isApiError(err) && err.response?.data?.message) || 
+          (err instanceof Error ? err.message : 'Unknown error');
+        toast.error(`Failed to ${action} community: ${errorMessage}`);
       }
     } finally {
       console.log('Join/Leave operation completed, isMember:', isMember);
@@ -425,11 +449,15 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <div className="relative">
-                                <img
-                                  src={post.author.avatarUrl || '/default-avatar.png'}
-                                  alt={post.author.username}
-                                  className="w-10 h-10 rounded-full border-2 border-blue-500"
-                                />
+                                <div className="relative w-10 h-10 rounded-full border-2 border-blue-500 overflow-hidden">
+                                  <Image
+                                    src={post.author.avatarUrl || '/default-avatar.png'}
+                                    alt={post.author.username}
+                                    fill
+                                    className="object-cover"
+                                    sizes="40px"
+                                  />
+                                </div>
                                 {post.isPinned && (
                                   <div className="absolute -top-1 -right-1 bg-blue-500 text-white p-1 rounded-full">
                                     <PinIcon className="w-3 h-3" />
@@ -474,7 +502,12 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                                   className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {console.log('User ID:', user?.id, 'Community Creator ID:', community?.creator?.id, 'Is Owner:', user?.id === community?.creator?.id)}
+                                  {(() => {
+                                    if (process.env.NODE_ENV === 'development') {
+                                      console.log('User ID:', user?.id, 'Community Creator ID:', community?.creator?.id, 'Is Owner:', user?.id === community?.creator?.id);
+                                    }
+                                    return null;
+                                  })()}
                                   {user?.id === community?.creator?.id && (
                                     <>
                                       <button
@@ -522,11 +555,15 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                           )}
                           {post.type === 'image' && post.imageUrl && (
                             <div className="mt-2 rounded-lg overflow-hidden">
-                              <img
-                                src={post.imageUrl}
-                                alt={post.title}
-                                className="w-full h-auto object-cover hover:scale-[1.02] transition-transform duration-200"
-                              />
+                              <div className="relative w-full h-64">
+                                <Image
+                                  src={post.imageUrl}
+                                  alt={post.title}
+                                  fill
+                                  className="object-cover hover:scale-[1.02] transition-transform duration-200"
+                                  sizes="(max-width: 768px) 100vw, 50vw"
+                                />
+                              </div>
                             </div>
                           )}
                           {post.type === 'link' && post.linkUrl && (
@@ -668,7 +705,7 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
               <Separator className="my-4 bg-orange-100 dark:bg-orange-900/30" />
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Be respectful and follow Reddit's content policy.
+                  Be respectful and follow Reddit&apos;s content policy.
                 </p>
                 <Button 
                   variant="ghost" 

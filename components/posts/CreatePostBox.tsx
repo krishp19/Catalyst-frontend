@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Input } from '../../components/ui/input';
-import { Image, Link2, FileText } from 'lucide-react';
+import { Image as ImageIcon, Link2, FileText } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import defaultAvatar from '../../assets/avatar.webp';
@@ -69,7 +69,7 @@ export const CreatePostBox = () => {
           className="gap-1.5 hover:bg-background"
           onClick={handleCreatePost}
         >
-          <Image className="h-4 w-4" />
+          <ImageIcon className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">Image</span>
         </Button>
         

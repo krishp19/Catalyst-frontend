@@ -99,9 +99,11 @@ export default function PostPage() {
                 {/* Community Banner */}
                 {community.bannerUrl && (
                   <div className="h-24 w-full">
+                    {/* Using img instead of Next.js Image due to dynamic src and TypeScript errors */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={community.bannerUrl} 
-                      alt={`${community.name} banner`} 
+                      alt={`${community.name} banner`}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -112,9 +114,11 @@ export default function PostPage() {
                   <div className="flex items-center gap-3 mb-6">
                     <div className="h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center -mt-8 border-4 border-white dark:border-gray-800">
                       {community.iconUrl ? (
+                        // Using img instead of Next.js Image due to dynamic src and TypeScript errors
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img 
                           src={community.iconUrl} 
-                          alt={community.name} 
+                          alt={community.name}
                           className="h-16 w-16 rounded-full object-cover"
                         />
                       ) : (

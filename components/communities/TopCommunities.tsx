@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -22,7 +22,7 @@ export const TopCommunities = () => {
   const router = useRouter();
   const { isAuthenticated } = useAppSelector((state: any) => state.auth);
 
-  const fetchCommunities = async () => {
+  const fetchCommunities = useCallback(async () => {
     try {
       console.log('Fetching communities and joined status...');
       const [communitiesData, joinedData] = await Promise.all([
@@ -49,11 +49,11 @@ export const TopCommunities = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchCommunities();
-  }, [isAuthenticated]); // Refetch when auth state changes
+  }, [fetchCommunities]);
 
   const handleJoin = async (communityId: string, isCurrentlyJoined: boolean) => {
     if (!isAuthenticated) {

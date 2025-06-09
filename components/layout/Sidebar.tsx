@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '../../lib/utils';
-import { Home, TrendingUp as Trending, Rocket, Gamepad2, Music, Film, BookOpen, Image, Users, Plus, Sparkles, Clock, Award, Heart, Zap, Star, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
+import { Home, TrendingUp as Trending, Rocket, Gamepad2, Music, Film, BookOpen, Image as ImageIcon, Users, Plus, Sparkles, Clock, Award, Heart, Zap, Star, Settings, HelpCircle, Moon, Sun } from 'lucide-react';
 import { Separator } from '../../components/ui/separator';
 import { Button } from '../../components/ui/button';
 import { ScrollArea } from '../../components/ui/scroll-area';
@@ -109,7 +109,7 @@ const Sidebar = () => {
     if (joinedCommunities.length === 0) {
       return (
         <div className="px-4 py-2 text-sm text-muted-foreground">
-          You haven't joined any communities yet
+          You haven&apos;t joined any communities yet
         </div>
       );
     }
@@ -194,7 +194,7 @@ const Sidebar = () => {
               active={isActive('/topic/books')} 
             />
             <SidebarItem 
-              icon={<Image className="h-4 w-4" />} 
+              icon={<ImageIcon className="h-4 w-4" aria-hidden="true" />} 
               label="Art" 
               href="/topic/art" 
               active={isActive('/topic/art')} 

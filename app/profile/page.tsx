@@ -1,8 +1,26 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import authService, { User } from "../../src/services/auth/authService";
 import { Card } from "../../components/ui/card";
+
+// Custom Avatar component to handle both local and remote images
+const AvatarImage = ({ src, alt, className = "" }: { src: string; alt: string; className?: string }) => {
+  const isExternal = src.startsWith('http');
+  
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes="128px"
+      className={className}
+      unoptimized={isExternal}
+    />
+  );
+};
+
 import { Button } from "../../components/ui/button";
 import { Loader2, Calendar, Mail, Edit2 } from "lucide-react";
 import defaultAvatar from "../../assets/avatar.webp";
@@ -65,11 +83,15 @@ const ProfilePage = () => {
             {/* Avatar and Basic Info */}
             <div className="flex flex-col md:flex-row items-center md:items-end -mt-16 mb-6">
               <div className="relative">
-                <img
-                  src={profile.avatarUrl || (typeof defaultAvatar === 'string' ? defaultAvatar : defaultAvatar.src)}
-                  alt={profile.username}
-                  className="w-32 h-32 rounded-full border-4 border-background bg-white object-cover shadow-lg"
-                />
+                <div className="relative w-32 h-32 rounded-full border-4 border-background bg-white shadow-lg">
+                  <div className="relative w-full h-full rounded-full overflow-hidden">
+                    <AvatarImage
+                      src={profile.avatarUrl || (typeof defaultAvatar === 'string' ? defaultAvatar : defaultAvatar.src)}
+                      alt={profile.username || 'User avatar'}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                </div>
                 <Button
                   variant="outline"
                   size="icon"

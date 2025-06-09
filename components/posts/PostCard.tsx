@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { 
   ArrowUp, 
   ArrowDown, 
@@ -187,17 +188,22 @@ export const PostCard = ({
                   paddingTop: '105.73%' /* 203/192 * 100% = 105.73% for 192:203 aspect ratio */
                 }}
               >
-                <img 
-                  src={`${post.imageUrl}?w=384&h=406&c=fill`} // Smaller dimensions but same aspect ratio
-                  alt={post.title} 
-                  className="absolute inset-0 w-full h-full object-contain bg-muted p-1"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    target.src = '/placeholder-image.jpg';
-                  }}
-                />
+                <div className="absolute inset-0 w-full h-full bg-muted p-1">
+                  <Image 
+                    src={post.imageUrl}
+                    alt={post.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 300px"
+                    className="object-contain"
+                    quality={75}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/placeholder-image.jpg';
+                    }}
+                    unoptimized={post.imageUrl.endsWith('.gif')}
+                  />
+                </div>
               </div>
             </div>
           )}

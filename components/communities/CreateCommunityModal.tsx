@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -379,11 +380,14 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
                 >
                   {iconPreview ? (
                     <div className="relative w-full h-full">
-                      <img
-                        src={iconPreview}
-                        alt="Icon preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={iconPreview}
+                          alt="Icon preview"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                       <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Pencil className="h-5 w-5 text-white" />
                       </div>
@@ -418,7 +422,7 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload a square image for your community's icon.
+                  Upload a square image for your community&apos;s icon.
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Recommended: 256x256px, JPG or PNG
@@ -455,11 +459,14 @@ export function CreateCommunityModal({ open, onOpenChange }: CreateCommunityModa
               >
                 {bannerPreview ? (
                   <div className="relative w-full h-full">
-                    <img
-                      src={bannerPreview}
-                      alt="Banner preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={bannerPreview}
+                        alt="Banner preview"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Pencil className="h-6 w-6 text-white" />
                       <span className="ml-2 text-white font-medium">Change banner</span>

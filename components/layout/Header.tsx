@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image, Users, Star, LogOut, Plus } from 'lucide-react';
+import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image as ImageIcon, Users, Star, LogOut, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -119,7 +119,7 @@ const Header = () => {
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
-                    <Image className="h-4 w-4" />
+                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
                     <span>Edit Avatar</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">

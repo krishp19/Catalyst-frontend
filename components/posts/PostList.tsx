@@ -101,14 +101,7 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
     triggerOnce: false,
   });
   const { toast } = useToast();
-  
-  // Load more posts when scrolled to bottom
-  useEffect(() => {
-    if (inView && hasMore && !loading) {
-      handleLoadMore();
-    }
-  }, [inView, hasMore, loading]);
-  
+
   const fetchPosts = useCallback(async (pageNum: number, sort: string, reset = false) => {
     try {
       if (pageNum === 1) setLoading(true);
@@ -191,14 +184,7 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
     fetchPosts(1, sortBy, true);
   }, [sortBy, showJoinedCommunities, fetchPosts]);
   
-  const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchPosts(nextPage, sortBy, false);
-    }
-  };
-  
+
   const handleSortChange = (value: 'hot' | 'new' | 'top') => {
     if (value === sortBy) return;
     setSortBy(value);
@@ -211,6 +197,21 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
     fetchPosts(1, sortBy, true);
   };
   
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchPosts(nextPage, sortBy, false);
+    }
+  }, [hasMore, loading, page, sortBy, fetchPosts]);
+  
+  // Load more posts when scrolled to bottom
+  useEffect(() => {
+    if (inView && hasMore && !loading) {
+      handleLoadMore();
+    }
+  }, [inView, hasMore, loading, handleLoadMore]);
+
   // Sort posts by creation date (newest first)
   const sortedPosts = useMemo(() => {
     return [...posts].sort((a, b) => {
