@@ -115,7 +115,7 @@ export class HttpClient {
 
 // Create axios instance with default config
 const httpClient = axios.create({
-  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api',
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000') + '/api',
   withCredentials: true, // Enable credentials (cookies, HTTP authentication)
   headers: {
     'Content-Type': 'application/json',
