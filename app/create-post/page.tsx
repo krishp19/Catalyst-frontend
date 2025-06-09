@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { postService, PostType } from '../../src/services/postService';
+import { postService, PostType, type CreatePostDto } from '../../src/services/postService';
 import { communityService, Community } from '../../src/services/communityService';
 import { tagService } from '../../src/services/tag.service';
 import { Tag } from '../../src/types/tag.types';
@@ -111,19 +111,23 @@ export default function CreatePostPage() {
     setSubmitting(true);
     try {
       // Prepare the post data according to the backend's expected format
-      const postData = {
+      const postData: CreatePostDto = {
         title: formData.title,
         content: formData.content,
-        imageUrl: formData.imageUrl || null,
-        linkUrl: formData.linkUrl || null,
         type: postType,
         communityId: selectedCommunity,
-        tags: formData.tags,
+        ...(formData.imageUrl && { imageUrl: formData.imageUrl }),
+        ...(formData.linkUrl && { linkUrl: formData.linkUrl }),
+        ...(formData.tags?.length ? { tags: formData.tags } : {})
       };
+      
+      if (!postData.content) delete postData.content;
 
       console.log('Submitting post data:', postData);
       
       // Create the post with all data including tags
+      const response = await postService.createPost(postData);
+      console.log('Post created successfully:', response);
       
       toast.success('Post created successfully!');
       

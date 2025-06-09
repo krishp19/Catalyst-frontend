@@ -2,7 +2,7 @@ import { httpClient } from '../lib/api/httpClient';
 import { Post } from '../types/post';
 
 class VoteService {
-  private baseUrl = '/api/posts';
+  private baseUrl = '/posts';
 
   async upvote(postId: string): Promise<Post> {
     try {

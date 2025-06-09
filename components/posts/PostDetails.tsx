@@ -200,25 +200,16 @@ export function PostDetails({ post }: PostDetailsProps) {
           
           {post.type === 'image' && post.imageUrl && (
             <div className="mb-4 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <div className="max-w-2xl w-full">
-                <div className="relative pt-[56.25%] w-full">
-                  <div className="relative w-full h-full">
-                    <Image 
-                      src={post.imageUrl} 
-                      alt={post.title} 
-                      fill
-                      sizes="(max-width: 768px) 100vw, 80vw"
-                      className="object-contain"
-                      style={{
-                        maxHeight: '600px',
-                        width: 'auto',
-                        maxWidth: '100%',
-                        margin: '0 auto',
-                        display: 'block'
-                      }}
-                      priority
-                    />
-                  </div>
+              <div className="relative w-full max-w-4xl">
+                <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%' }}>
+                  <Image 
+                    src={post.imageUrl} 
+                    alt={post.title} 
+                    fill
+                    sizes="(max-width: 800px) 100vw, 800px"
+                    className="object-contain p-4"
+                    priority
+                  />
                 </div>
               </div>
             </div>
