@@ -554,15 +554,28 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                             </p>
                           )}
                           {post.type === 'image' && post.imageUrl && (
-                            <div className="mt-2 rounded-lg overflow-hidden">
-                              <div className="relative w-full h-64">
-                                <Image
-                                  src={post.imageUrl}
-                                  alt={post.title}
-                                  fill
-                                  className="object-cover hover:scale-[1.02] transition-transform duration-200"
-                                  sizes="(max-width: 768px) 100vw, 50vw"
-                                />
+                            <div className="mt-4 rounded-md overflow-hidden border border-border max-w-full">
+                              <div 
+                                className="relative w-full" 
+                                style={{ 
+                                  paddingTop: '56.25%' /* 16:9 aspect ratio */
+                                }}
+                              >
+                                <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
+                                  <Image 
+                                    src={post.imageUrl}
+                                    alt={post.title}
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    className="object-contain p-1"
+                                    quality={80}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.onerror = null;
+                                      target.src = '/placeholder.svg';
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
                           )}
