@@ -16,9 +16,13 @@ export default async function CommunityPage({
 }) {
   try {
     // Fetch community data from the API with revalidation
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     const response = await fetch(
-      `http://localhost:3000/api/communities/${params.communityName}`,
-      { next: { revalidate: 60 } } // Revalidate every 60 seconds
+      `${apiUrl}/api/communities/${params.communityName}`,
+      { 
+        next: { revalidate: 60 }, // Revalidate every 60 seconds
+        credentials: 'include' // Include cookies for authentication
+      }
     );
 
     if (!response.ok) {
