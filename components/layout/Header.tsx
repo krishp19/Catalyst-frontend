@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search, Bell, MessageSquare, ChevronDown, Moon, Sun, User, Image as ImageIcon, Users, Star, LogOut, Plus, XCircle, Menu } from 'lucide-react';
+import { notificationService } from '@/services/notificationService';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -32,6 +33,8 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useAppDispatch();
   const pathname = usePathname();
 
@@ -81,6 +84,35 @@ const Header = () => {
     setQuery('');
     setIsOpen(false);
   }, [pathname, setQuery, setIsOpen]);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        setIsLoading(true);
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Failed to fetch unread notifications count:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Set up polling to refresh the count every 10 seconds
+    const interval = setInterval(fetchUnreadCount, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   return (
     <div className="sticky top-0 z-50 w-full">
@@ -281,12 +313,16 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full hover:bg-accent/50"
-                onClick={() => {}}
+                className="h-9 w-9 rounded-full hover:bg-accent/50 relative"
+                onClick={() => router.push('/notifications')}
               >
                 <Bell className="h-5 w-5" />
                 <span className="sr-only">Notifications</span>
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-orange-500 text-white text-xs font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Button>
             </div>
 
@@ -367,7 +403,7 @@ const Header = () => {
                     <Star className="h-4 w-4" />
                     <span>Premium</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={toggleTheme}>
                     {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                     <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                   </DropdownMenuItem>
