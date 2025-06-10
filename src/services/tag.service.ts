@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Tag } from '../types/tag.types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 // Create axios instance with default config
 const httpClient = axios.create({
@@ -39,7 +39,7 @@ httpClient.interceptors.request.use(
 export const tagService = {
   // Get all tags with optional search
   getTags: async (searchTerm: string = ''): Promise<Tag[]> => {
-    const response = await httpClient.get('/tags/search', {
+    const response = await httpClient.get('/api/tags/search', {
       params: { query: searchTerm }
     });
     return response.data;
@@ -47,7 +47,7 @@ export const tagService = {
 
   // Get popular tags
   getPopularTags: async (limit: number = 10): Promise<Tag[]> => {
-    const response = await httpClient.get('/tags/popular', {
+    const response = await httpClient.get('/api/tags/popular', {
       params: { limit }
     });
     return response.data;
@@ -55,17 +55,17 @@ export const tagService = {
 
   // Get tags by post
   getPostTags: async (postId: string): Promise<Tag[]> => {
-    const response = await axios.get(`${API_URL}/posts/${postId}/tags`);
+    const response = await axios.get(`${API_URL}/api/posts/${postId}/tags`);
     return response.data;
   },
 
   // Add tags to post
   addTagsToPost: async (postId: string, tagNames: string[]): Promise<void> => {
-    await axios.post(`${API_URL}/posts/${postId}/tags`, { tags: tagNames });
+    await axios.post(`${API_URL}/api/posts/${postId}/tags`, { tags: tagNames });
   },
 
   // Remove tag from post
   removeTagFromPost: async (postId: string, tagId: string): Promise<void> => {
-    await axios.delete(`${API_URL}/posts/${postId}/tags/${tagId}`);
+    await axios.delete(`${API_URL}/api/posts/${postId}/tags/${tagId}`);
   }
 };

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Topic } from '../types/topic.types';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api');
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
 
 // Create axios instance with default config
 const api = axios.create({
@@ -54,9 +54,9 @@ export const topicService = {
   getTopics: async (searchTerm: string = '', page: number = 1, limit: number = 10): Promise<{ topics: Topic[]; total: number }> => {
     console.log('Fetching topics with search:', searchTerm); // Debug log
     try {
-      console.log('API URL:', `${API_URL}/topics/search`); // Debug log
+      console.log('API URL:', `${API_URL}/api/topics/search`); // Debug log
       
-      const response = await api.get('/topics/search', {
+      const response = await api.get('/api/topics/search', {
         params: { 
           query: searchTerm,
           limit
@@ -89,7 +89,7 @@ export const topicService = {
 
   // Get popular topics
   getPopularTopics: async (limit: number = 10): Promise<Topic[]> => {
-    const response = await api.get('/topics/popular', {
+    const response = await api.get('/api/topics/popular', {
       params: { limit }
     });
     return response.data;
@@ -97,17 +97,17 @@ export const topicService = {
 
   // Get topics by community
   getCommunityTopics: async (communityId: string): Promise<Topic[]> => {
-    const response = await api.get(`/communities/${communityId}/topics`);
+    const response = await api.get(`/api/communities/${communityId}/topics`);
     return response.data;
   },
 
   // Add topics to community
   addTopicsToCommunity: async (communityId: string, topicIds: string[]): Promise<void> => {
-    await api.post(`/communities/${communityId}/topics`, { topicIds });
+    await api.post(`/api/communities/${communityId}/topics`, { topicIds });
   },
 
   // Remove topic from community
   removeTopicFromCommunity: async (communityId: string, topicId: string): Promise<void> => {
-    await api.delete(`/communities/${communityId}/topics/${topicId}`);
+    await api.delete(`/api/communities/${communityId}/topics/${topicId}`);
   }
 };
