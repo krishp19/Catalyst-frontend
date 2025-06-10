@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, Bell, MessageSquare, ChevronDown, Menu, X, Moon, Sun, User, Image as ImageIcon, Users, Star, LogOut, Plus, XCircle } from 'lucide-react';
+import { Search, Bell, MessageSquare, ChevronDown, Moon, Sun, User, Image as ImageIcon, Users, Star, LogOut, Plus, XCircle, Menu } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
@@ -18,12 +18,12 @@ import { logout } from '../../src/store/features/auth/authSlice';
 import { LoginModal } from '../../components/auth/LoginModal';
 import { SignupModal } from '../../components/auth/SignupModal';
 import { useTheme } from 'next-themes';
-import { cn } from '../../lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { MobileSidebar } from './MobileSidebar';
 import defaultAvatar from '../../assets/avatar.webp';
 import { SearchResults } from '../search/SearchResults';
 import { useSearch } from '@/hooks/useSearch';
+import { cn } from '../../lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import MobileSidebar from './MobileSidebar';
 
 const Header = () => {
   const router = useRouter();
@@ -37,9 +37,10 @@ const Header = () => {
 
   // Search functionality
   const searchRef = useRef<HTMLDivElement>(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const {
     query,
-    setQuery,
+    setQuery, 
     type,
     setType,
     sort,
@@ -51,11 +52,14 @@ const Header = () => {
     handleResultClick,
   } = useSearch();
 
-  // Close search when clicking outside
+  // Close mobile search when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        if (showMobileSearch) {
+          setShowMobileSearch(false);
+        }
       }
     };
 
@@ -63,7 +67,14 @@ const Header = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [setIsOpen]);
+  }, [setIsOpen, showMobileSearch]);
+
+  // Clear search when navigating to a new page
+  useEffect(() => {
+    setQuery('');
+    setIsOpen(false);
+    setShowMobileSearch(false);
+  }, [pathname, setQuery, setIsOpen]);
 
   // Clear search when navigating to a new page
   useEffect(() => {
@@ -71,15 +82,25 @@ const Header = () => {
     setIsOpen(false);
   }, [pathname, setQuery, setIsOpen]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push('/');
-  };
-
   return (
-    <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-50 w-full">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center h-14 px-4 md:px-6">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden mr-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-[280px] sm:w-[300px]">
+                <MobileSidebar onNavigate={() => {}} />
+              </SheetContent>
+            </Sheet>
+          </div>
+          
           {/* Logo */}
           <div className="flex items-center">
             <a href="/" className="flex items-center">
@@ -93,8 +114,8 @@ const Header = () => {
             </a>
           </div>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex flex-1 mx-4 relative" ref={searchRef}>
+          {/* Search Bar - Desktop */}
+          <div className="hidden md:flex flex-1 mx-4 relative mt-2" ref={searchRef}>
             <div className="relative w-full max-w-2xl">
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-pink-500/5 rounded-lg -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
@@ -179,7 +200,7 @@ const Header = () => {
 
               {/* Search results */}
               {isOpen && (
-                <div className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-50 mt-1 overflow-hidden rounded-lg shadow-xl border border-border bg-background max-h-[calc(100vh-100px)]">
+                <div className="absolute z-50 w-full mt-1 overflow-hidden rounded-lg shadow-xl border border-border bg-background">
                   <SearchResults
                     results={results}
                     isLoading={isSearching}
@@ -191,120 +212,225 @@ const Header = () => {
             </div>
           </div>
 
+          {/* Mobile Search */}
+          <div className="md:hidden ml-auto mr-1 relative">
+            <div className="relative" ref={searchRef}>
+              {showMobileSearch ? (
+                <div className="fixed top-4 right-4 left-4 z-50">
+                  <div className="bg-background shadow-lg rounded-md p-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search posts, communities, and more..."
+                        className="w-full pl-10 pr-10 bg-background border border-border/70 hover:border-orange-500/50 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all duration-200 shadow-sm rounded-lg h-10 text-sm"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onFocus={() => query.trim() && setIsOpen(true)}
+                        autoFocus
+                      />
+                      {query ? (
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQuery('');
+                          }}
+                          aria-label="Clear search"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                    {isOpen && (
+                      <div className="mt-1 pt-2 max-h-[60vh] overflow-y-auto">
+                        <SearchResults
+                          results={results}
+                          isLoading={isSearching}
+                          onResultClick={(result) => {
+                            handleResultClick(result);
+                            setShowMobileSearch(false);
+                          }}
+                          query={query}
+                          variant="mobile"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMobileSearch(true);
+                  }}
+                  className="h-9 w-9"
+                >
+                  <Search className="h-5 w-5" />
+                  <span className="sr-only">Search</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* Right side actions */}
-          <div className="flex items-center gap-2 md:gap-4 ml-auto">
-            {isAuthenticated ? (
-              <>
-                <Button variant="ghost" size="icon" className="hidden md:flex">
-                  <Bell className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="hidden md:flex">
-                  <MessageSquare className="h-5 w-5" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="gap-2 px-2">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage src={user?.avatar || defaultAvatar.src} alt={user?.username} />
-                        <AvatarFallback>{user?.username?.charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <span className="hidden md:inline-flex items-center gap-1">
-                        {user?.username}
-                        <ChevronDown className="h-4 w-4" />
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => router.push(`/u/${user?.username}`)}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/create/post')}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      <span>Create Post</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/create/community')}>
-                      <Users className="mr-2 h-4 w-4" />
-                      <span>Create Community</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                      {theme === 'dark' ? (
-                        <Sun className="mr-2 h-4 w-4" />
-                      ) : (
-                        <Moon className="mr-2 h-4 w-4" />
-                      )}
-                      <span>{theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsLoginModalOpen(true)}
-                  className="hidden md:flex"
-                >
-                  Log In
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setIsSignupModalOpen(true)}
-                  className="hidden md:flex"
-                >
-                  Sign Up
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="md:hidden"
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="h-5 w-5" />
-                  ) : (
-                    <Moon className="h-5 w-5" />
-                  )}
-                </Button>
-              </div>
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-4 ml-auto">
+            {/* Notification Button - Hidden on mobile when search is open */}
+            <div className={cn("relative", showMobileSearch && "hidden")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full hover:bg-accent/50"
+                onClick={() => {}}
+              >
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Notifications</span>
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500"></span>
+              </Button>
+            </div>
+
+            {/* Create Post Button */}
+            {isAuthenticated && (
+              <Button
+                variant="default"
+                className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full bg-orange-500 hover:bg-orange-600 text-white"
+                onClick={() => router.push('/create-post')}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="font-medium text-sm">Create</span>
+              </Button>
+            )}
+            
+            {/* Create Post Button - Mobile */}
+            {isAuthenticated && (
+              <Button
+                variant="default"
+                size="icon"
+                className="sm:hidden h-9 w-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white"
+                onClick={() => router.push('/submit')}
+              >
+                <Plus className="h-5 w-5" />
+                <span className="sr-only">Create Post</span>
+              </Button>
             )}
 
-            {/* Mobile menu button */}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  {isMobileMenuOpen ? (
-                    <X className="h-5 w-5" />
-                  ) : (
-                    <Menu className="h-5 w-5" />
-                  )}
+            <Button variant="ghost" size="icon" className="hidden md:flex">
+              <MessageSquare className="h-5 w-5" />
+              <span className="sr-only">Messages</span>
+            </Button>
+
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 p-1 md:p-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatar || defaultAvatar} alt={user.username} />
+                      <AvatarFallback>{user.username[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:flex flex-col items-start">
+                      <span className="text-sm font-medium">{user.username}</span>
+                      <span className="text-xs text-muted-foreground">{user.karma} karma</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 p-2 bg-background border rounded-md shadow-lg">
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatar || defaultAvatar} alt={user.username} />
+                      <AvatarFallback>{user.username[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{user.username}</span>
+                      <span className="text-xs text-muted-foreground">{user.karma} karma</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <User className="h-4 w-4" />
+                    <span>Edit Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => window.location.href = '/profile'}>
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                    <span>Edit Avatar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Users className="h-4 w-4" />
+                    <span>Manage Community</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                    <Star className="h-4 w-4" />
+                    <span>Premium</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                    {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => dispatch(logout())}>
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                {/* Desktop Login/Signup Buttons - Hidden on mobile */}
+                <div className="hidden md:flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="hidden md:inline-flex"
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setIsLoginModalOpen(false);
+                      setIsSignupModalOpen(true);
+                    }}
+                    className="hidden md:inline-flex"
+                  >
+                    Sign Up
+                  </Button>
+                </div>
+                
+                {/* Mobile User Icon - Shows login modal */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="md:hidden"
+                  onClick={() => setIsLoginModalOpen(true)}
+                >
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Login or Sign up</span>
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0">
-                <MobileSidebar />
-              </SheetContent>
-            </Sheet>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      <LoginModal
-        open={isLoginModalOpen}
+      {/* Auth Modals */}
+      <LoginModal 
+        open={isLoginModalOpen} 
         onOpenChange={setIsLoginModalOpen}
         onSignupClick={() => {
           setIsLoginModalOpen(false);
           setIsSignupModalOpen(true);
         }}
       />
-      <SignupModal
+      
+      <SignupModal 
         open={isSignupModalOpen}
         onOpenChange={setIsSignupModalOpen}
         onLoginClick={() => {
@@ -312,7 +438,25 @@ const Header = () => {
           setIsLoginModalOpen(true);
         }}
       />
-    </>
+      
+      {/* Mobile search overlay - Only show when search is active */}
+      {showMobileSearch && (
+        <div 
+          className="fixed-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMobileSearch(false);
+          }}
+          onTouchStart={(e) => e.stopPropagation()}
+          style={{
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 40,
+            pointerEvents: 'auto' // Ensure overlay is clickable
+          }}
+        />
+      )}
+    </div>
   );
 };
 
