@@ -248,12 +248,10 @@ const Header = () => {
                         <SearchResults
                           results={results}
                           isLoading={isSearching}
-                          onResultClick={(result) => {
-                            handleResultClick(result);
+                          onResultClick={() => {
                             setShowMobileSearch(false);
                           }}
                           query={query}
-                          variant="mobile"
                         />
                       </div>
                     )}
