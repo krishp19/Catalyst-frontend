@@ -48,11 +48,22 @@ export const loginUser = createAsyncThunk<LoginResponse, LoginData, { rejectValu
         return rejectWithValue(response.error.message);
       }
       if (!response.data) {
-        return rejectWithValue('No data received');
+        return rejectWithValue('No data received from server');
       }
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to login');
+      console.error('Login error:', error);
+      if (error.response) {
+        // Server responded with an error
+        const errorMessage = error.response.data?.message || 'Invalid credentials';
+        return rejectWithValue(errorMessage);
+      } else if (error.request) {
+        // Request was made but no response was received
+        return rejectWithValue('Unable to connect to the server. Please check your connection.');
+      } else {
+        // Something happened in setting up the request
+        return rejectWithValue(error.message || 'An unexpected error occurred');
+      }
     }
   }
 );

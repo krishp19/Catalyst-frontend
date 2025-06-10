@@ -68,24 +68,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    const resultAction = await dispatch(loginUser(data));
-    
-    if (loginUser.fulfilled.match(resultAction)) {
-      toast({
-        title: 'Success',
-        description: 'You have been successfully logged in!',
-      });
-      setOpen(false);
-      form.reset();
+    try {
+      const resultAction = await dispatch(loginUser(data));
+      
+      if (loginUser.fulfilled.match(resultAction)) {
+        toast({
+          title: 'Success',
+          description: 'You have been successfully logged in!',
+        });
+        setOpen(false);
+        form.reset();
+      }
+    } catch (error) {
+      console.error('Login submission error:', error);
+      // Error is already handled by the error effect below
     }
   };
 
-  // Handle error toast
+  // Handle error toast and reset loading state
   useEffect(() => {
     if (error) {
+      console.log('Login error occurred:', error);
       toast({
-        title: 'Error',
-        description: error,
+        title: 'Login Failed',
+        description: error || 'An error occurred during login',
         variant: 'destructive',
       });
       dispatch(clearError());

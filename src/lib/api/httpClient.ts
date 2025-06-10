@@ -49,18 +49,34 @@ export class HttpClient {
     }
 
     try {
+      console.log(`Making ${method} request to:`, url);
       const response = await fetch(url, config);
       let responseData;
       
       const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
+      try {
+        responseData = contentType?.includes('application/json') 
+          ? await response.json() 
+          : await response.text();
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
         responseData = await response.text();
       }
 
+      console.log(`Response from ${url}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        data: responseData
+      });
+
       if (!response.ok) {
-        throw new Error(responseData.message || 'Something went wrong');
+        const error = new Error(responseData.message || 'Request failed');
+        (error as any).response = {
+          status: response.status,
+          data: responseData,
+          headers: response.headers,
+        };
+        throw error;
       }
 
       return {
@@ -69,8 +85,13 @@ export class HttpClient {
         statusText: response.statusText,
         headers: response.headers,
       };
-    } catch (error) {
-      console.error('API request failed:', error);
+    } catch (error: any) {
+      console.error('API request failed:', {
+        url,
+        method,
+        error: error.message,
+        response: error.response,
+      });
       throw error;
     }
   }
