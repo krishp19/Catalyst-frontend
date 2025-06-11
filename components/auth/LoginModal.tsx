@@ -37,12 +37,14 @@ interface LoginModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSignupClick?: () => void;
+  onSuccess?: () => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   open: externalOpen,
   onOpenChange: setExternalOpen,
   onSignupClick: externalSignupClick,
+  onSuccess,
 }) => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
@@ -78,6 +80,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         });
         setOpen(false);
         form.reset();
+        // Call the onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       console.error('Login submission error:', error);
@@ -126,64 +132,109 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e: any) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Log in to Catalyst</DialogTitle>
-          <DialogDescription>
-            Enter your credentials to access your account
+      <DialogContent 
+        className="sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg"
+        onInteractOutside={(e: any) => e.preventDefault()}
+      >
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</DialogTitle>
+          <DialogDescription className="text-gray-500 dark:text-gray-400">
+            Log in to continue to Catalyst
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="usernameOrEmail"
-              render={({ field }: { field: any }) => (
-                <FormItem>
-                  <FormLabel>Username or Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your username or email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }: { field: any }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter your password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
+        
+        <div className="px-6 pb-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="usernameOrEmail"
+                render={({ field }: { field: any }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Username or Email
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-orange-500 focus:ring-orange-500"
+                        placeholder="Enter your username or email" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }: { field: any }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Password
+                      </FormLabel>
+                      <button 
+                        type="button" 
+                        className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-orange-500 focus:ring-orange-500"
+                        placeholder="Enter your password" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="pt-2">
+                <Button 
+                  type="submit" 
+                  className="w-full h-10 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-colors"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" data-testid="loader" />
+                      Logging in...
+                    </>
+                  ) : (
+                    'Log in'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+          
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                OR
+              </span>
+            </div>
+          </div>
+          
+          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+            Don't have an account?{' '}
+            <button 
+              type="button" 
+              className="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400"
+              onClick={handleSignupClick}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" data-testid="loader" />
-                  Logging in...
-                </>
-              ) : (
-                'Log in'
-              )}
-            </Button>
-          </form>
-        </Form>
-        <div className="mt-4 text-center text-sm">
-          <p className="text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Button variant="link" className="p-0" onClick={handleSignupClick}>
               Sign up
-            </Button>
-          </p>
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

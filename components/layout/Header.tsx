@@ -380,44 +380,54 @@ const Header = () => {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="my-2" />
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
-                    <User className="h-4 w-4" />
-                    <span>Edit Profile</span>
+                  <DropdownMenuItem className="flex items-center gap-3 p-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 rounded-md transition-colors">
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Edit Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => window.location.href = '/profile'}>
-                    <User className="h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem 
+                    className="flex items-center gap-3 p-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 rounded-md transition-colors" 
+                    onClick={() => window.location.href = '/profile'}
+                  >
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
-                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
-                    <span>Edit Avatar</span>
+                  <DropdownMenuItem className="flex items-center gap-3 p-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 rounded-md transition-colors">
+                    <ImageIcon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <span className="text-sm font-medium">Edit Avatar</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
-                    <Users className="h-4 w-4" />
-                    <span>Manage Community</span>
+                  <DropdownMenuItem className="flex items-center gap-3 p-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 rounded-md transition-colors">
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Manage Community</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
-                    <Star className="h-4 w-4" />
-                    <span>Premium</span>
+                  <DropdownMenuItem className="flex items-center gap-3 p-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 rounded-md transition-colors">
+                    <Star className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Premium</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-2" />
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => dispatch(logout())}>
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
+                  <DropdownMenuSeparator className="my-2 border-t border-gray-200 dark:border-gray-700" />
+                  <DropdownMenuItem 
+                    className="flex items-center gap-3 p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 rounded-md transition-colors" 
+                    onClick={async () => {
+                      await dispatch(logout());
+                      // Force a full page refresh after logout to ensure all components get the updated auth state
+                      window.location.reload();
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
                 {/* Desktop Login/Signup Buttons - Hidden on mobile */}
-                <div className="hidden md:flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-3">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setIsLoginModalOpen(true)}
-                    className="hidden md:inline-flex"
+                    className="hidden md:inline-flex h-9 px-4 rounded-full border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200"
                   >
-                    Login
+                    Log In
                   </Button>
                   <Button 
                     size="sm"
@@ -425,7 +435,7 @@ const Header = () => {
                       setIsLoginModalOpen(false);
                       setIsSignupModalOpen(true);
                     }}
-                    className="hidden md:inline-flex"
+                    className="hidden md:inline-flex h-9 px-4 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 shadow-sm hover:shadow-md"
                   >
                     Sign Up
                   </Button>
@@ -454,6 +464,10 @@ const Header = () => {
         onSignupClick={() => {
           setIsLoginModalOpen(false);
           setIsSignupModalOpen(true);
+        }}
+        onSuccess={() => {
+          // Force a full page refresh to ensure all components get the updated auth state
+          window.location.reload();
         }}
       />
       
