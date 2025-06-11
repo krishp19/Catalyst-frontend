@@ -36,6 +36,7 @@ import { postService } from '../../src/services/postService';
 import { voteService } from '../../src/services/voteService';
 import { toast } from 'sonner';
 import { useAuth } from '../../src/hooks/useAuth';
+import HtmlContent from '../common/HtmlContent';
 
 interface PostDetailsProps {
   post: Post;
@@ -194,8 +195,10 @@ export function PostDetails({ post }: PostDetailsProps) {
           )}
           
           {/* Post Content */}
-          {post.type === 'text' && (
-            <div className="text-base mb-4 whitespace-pre-wrap">{post.content}</div>
+          {post.type === 'text' && post.content && (
+            <div className="text-base mb-4">
+              <HtmlContent html={post.content} className="prose dark:prose-invert max-w-none" />
+            </div>
           )}
           
           {post.type === 'image' && post.imageUrl && (

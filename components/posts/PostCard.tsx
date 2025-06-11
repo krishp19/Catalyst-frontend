@@ -30,6 +30,7 @@ import {
 import { Card } from '../../components/ui/card';
 import Link from 'next/link';
 import { PostWithVote } from '../../src/types/post.types';
+import HtmlContent from '../common/HtmlContent';
 
 interface PostCardProps {
   post: PostWithVote;
@@ -171,8 +172,10 @@ export const PostCard = ({
             </div>
           )}
           
-          {post.type === 'text' && (
-            <div className="text-sm mb-4 line-clamp-3">{post.content}</div>
+          {post.type === 'text' && post.content && (
+            <div className="text-sm mb-4 line-clamp-3">
+              <HtmlContent html={post.content} className="prose-sm max-w-none" />
+            </div>
           )}
           
           {post.type === 'image' && post.imageUrl && (

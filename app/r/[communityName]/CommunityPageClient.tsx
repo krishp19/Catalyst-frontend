@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../src/hooks/useAuth';
+import HtmlContent from '../../../components/common/HtmlContent';
 
 interface CommunityPageClientProps {
   initialCommunity: Community;
@@ -548,10 +549,10 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                               {post.title}
                             </h2>
                           </Link>
-                          {post.type === 'text' && (
-                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                              {post.content}
-                            </p>
+                          {post.type === 'text' && post.content && (
+                            <div className="text-gray-700 dark:text-gray-300">
+                              <HtmlContent html={post.content} className="prose dark:prose-invert prose-sm max-w-none" />
+                            </div>
                           )}
                           {post.type === 'image' && post.imageUrl && (
                             <div className="mt-4 rounded-md overflow-hidden border border-border max-w-full">
