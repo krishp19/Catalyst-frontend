@@ -85,18 +85,6 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
   });
   const { toast } = useToast();
   
-  // Reset posts and fetch when popular prop changes
-  useEffect(() => {
-    const fetchInitialPosts = async () => {
-      setPosts([]);
-      setPage(1);
-      setHasMore(true);
-      await fetchPosts(1, sortBy, true);
-    };
-    
-    fetchInitialPosts();
-  }, [popular, sortBy]);
-
   const fetchPosts = useCallback(async (pageNum: number, sort: string, reset = false) => {
     try {
       if (pageNum === 1) setLoading(true);
@@ -136,8 +124,6 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
           sort
         });
       }
-      
-      console.log('API Response:', response);
       
       // Ensure we have valid posts and update state
       const items = Array.isArray(response?.items) ? response.items : [];
@@ -194,12 +180,24 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
     } finally {
       setLoading(false);
     }
-  }, [showJoinedCommunities, popular, toast]);
+  }, [showJoinedCommunities, popular, toast, isAuthenticated]);
   
   // Initial load and when sort changes
   useEffect(() => {
-    fetchPosts(1, sortBy);
-  }, [sortBy, showJoinedCommunities, popular, fetchPosts]);
+    if (initialPosts) {
+      // If we have initialPosts, we don't need to fetch
+      return;
+    }
+    
+    const fetchInitialPosts = async () => {
+      setPosts([]);
+      setPage(1);
+      setHasMore(true);
+      await fetchPosts(1, sortBy, true);
+    };
+    
+    fetchInitialPosts();
+  }, [sortBy, showJoinedCommunities, popular, fetchPosts, initialPosts]);
   
 
   const handleSortChange = (value: 'hot' | 'new' | 'top') => {
@@ -313,9 +311,11 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold pb-2 border-b border-border">
-        {showJoinedCommunities ? 'Your Communities' : 'Latest Posts'}
-      </h2>
+      {!showJoinedCommunities && (
+        <h2 className="text-xl font-semibold pb-2 border-b border-border">
+          Latest Posts
+        </h2>
+      )}
       {/* Most Recent Post */}
       {loading && page === 1 ? (
         <Card className="p-4">

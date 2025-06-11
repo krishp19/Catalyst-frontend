@@ -11,6 +11,7 @@ import type { User } from "@/services/auth/types";
 import defaultAvatar from "../../assets/avatar.webp";
 import Sidebar from "../../components/layout/Sidebar";
 import { EditProfileModal } from "../../components/profile/EditProfileModal";
+import HtmlContent from "../../components/common/HtmlContent";
 
 // Type for items that can be either posts or comments
 type VotableItem = Post | Comment;
@@ -384,7 +385,11 @@ const ProfilePage = () => {
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium">{post.title}</h4>
-                        {post.content && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{post.content}</p>}
+                        {post.content && (
+                          <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            <HtmlContent html={post.content} className="prose-sm max-w-none" />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                           <span>Posted in {getPostCommunityInfo(post)}</span>
                           <span>•</span>
@@ -404,7 +409,9 @@ const ProfilePage = () => {
                         <div className="text-sm text-muted-foreground mb-1">
                           Commented on <span className="font-medium">{comment.post.title}</span>
                         </div>
-                        <p className="text-foreground">{comment.content}</p>
+                        <div className="text-foreground">
+                          <HtmlContent html={comment.content} className="prose-sm max-w-none" />
+                        </div>
                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                           <ThumbsUp className="h-3 w-3" />
                           <span>{comment.upvotes - comment.downvotes} Likes</span>
@@ -463,7 +470,11 @@ const ProfilePage = () => {
                                   </div>
                                 )}
                                 <div className="flex-1">
-                                  {post.content && <p className="text-sm text-muted-foreground">{post.content}</p>}
+                                  {post.content && (
+                                    <div className="text-sm text-muted-foreground">
+                                      <HtmlContent html={post.content} className="prose-sm max-w-none" />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
@@ -518,7 +529,9 @@ const ProfilePage = () => {
                                   <span> in {getPostCommunityInfo(comment.post as Post)}</span>
                                 )}
                               </div>
-                              <p className="text-foreground">{comment.content}</p>
+                              <div className="text-foreground">
+                              <HtmlContent html={comment.content} className="prose-sm max-w-none" />
+                            </div>
                               <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <ThumbsUp className="h-3 w-3" />

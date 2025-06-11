@@ -18,8 +18,26 @@ export default function Home() {
             <CreatePostBox />
             <div className="space-y-6">
               <PostList showJoinedCommunities={true} />
-              <div className="mt-8">
-                <MorePosts limit={5} />
+              <div className="mt-6 flex justify-center">
+                <a 
+                  href="/all" 
+                  className="group inline-flex items-center text-sm font-medium text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors duration-200"
+                >
+                  View more posts
+                  <svg 
+                    className="ml-1 w-4 h-4 transition-transform duration-200 transform group-hover:translate-x-1" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M9 5l7 7-7 7" 
+                    />
+                  </svg>
+                </a>
               </div>
             </div>
           </div>
