@@ -76,7 +76,7 @@ export function MorePosts({ excludePostId, limit = 5, communityId }: MorePostsPr
         votes: post.score || 0,
         commentCount: post.commentCount || 0,
         isPinned: post.isPinned || false,
-        tags: post.tags?.map((tag: { id: string; name: string; usageCount: number; createdAt: string; updatedAt: string }) => tag.name) || []
+        tags: post.tags || []
       }));
 
       const filteredPosts = excludePostId
