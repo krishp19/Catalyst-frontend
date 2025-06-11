@@ -4,27 +4,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { Post } from '@/types/post';
 
 // Extend the Post type to include voting information
-interface VoteInfo {
-  userVote?: 'up' | 'down' | null;
-  score?: number;
-}
-
 type PostWithVote = Omit<Post, 'author' | 'community' | 'tags'> & {
   author: {
     id: string;
     username: string;
-    avatar: string;
+    avatarUrl?: string;
   };
   community: {
     id: string;
     name: string;
     description: string;
-    icon: string;
-    members: number;
+    iconUrl?: string;
+    memberCount: number;
     createdAt: string;
   };
   tags: string[];
-} & VoteInfo;
+  userVote?: 'up' | 'down' | null;
+  score?: number;
+};
+
 import { PostCard } from './PostCard';
 import { Button } from '../ui/button';
 import { Loader2 } from 'lucide-react';
@@ -188,16 +186,16 @@ export function MorePosts({ excludePostId, limit = 5, communityId }: MorePostsPr
             post={{
               ...post,
               author: {
-                ...post.author,
-                // Ensure avatar is set correctly
-                avatar: post.author.avatar || ''
+                id: post.author.id,
+                username: post.author.username,
+                avatarUrl: 'avatarUrl' in post.author ? post.author.avatarUrl : (post.author as any).avatar || ''
               },
               community: {
                 id: post.community.id,
                 name: post.community.name,
                 description: post.community.description || '',
-                icon: 'icon' in post.community ? post.community.icon : (post.community as any).iconUrl || '',
-                members: 'members' in post.community ? post.community.members : (post.community as any).memberCount || 0,
+                iconUrl: 'iconUrl' in post.community ? post.community.iconUrl : (post.community as any).icon || '',
+                memberCount: 'memberCount' in post.community ? post.community.memberCount : (post.community as any).members || 0,
                 createdAt: post.community.createdAt
               }
             }}

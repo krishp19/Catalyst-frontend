@@ -27,14 +27,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import { Post } from '../../lib/types';
 import { Card } from '../../components/ui/card';
 import Link from 'next/link';
-
-interface PostWithVote extends Post {
-  userVote?: 'up' | 'down' | null;
-  score?: number;
-}
+import { PostWithVote } from '../../src/types/post.types';
 
 interface PostCardProps {
   post: PostWithVote;
@@ -142,7 +137,7 @@ export const PostCard = ({
           <div className="flex items-center text-xs text-muted-foreground mb-2">
             <div className="flex items-center">
               <Avatar className="h-5 w-5 mr-1">
-                <AvatarImage src={post.community.icon} alt={post.community.name} />
+                <AvatarImage src={post.community.iconUrl} alt={post.community.name} />
                 <AvatarFallback>{post.community.name[0]}</AvatarFallback>
               </Avatar>
               <a href={`/r/${post.community.name}`} className="font-medium hover:underline">

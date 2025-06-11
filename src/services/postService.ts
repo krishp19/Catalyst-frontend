@@ -38,6 +38,18 @@ export interface ApiResponse<T> {
 class PostService {
   private baseUrl = '/posts';
 
+  async getPopularPosts(limit: number = 10): Promise<ApiResponse<Post>> {
+    try {
+      const response = await httpClient.get<ApiResponse<Post>>(`${this.baseUrl}/popular`, {
+        params: { limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching popular posts:', error);
+      throw error;
+    }
+  }
+
   async getPosts(params: {
     page?: number;
     limit?: number;

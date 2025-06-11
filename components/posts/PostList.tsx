@@ -11,33 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import { Post } from '@/types/post';
+import { Post } from '../../src/types/post';
+import { PostWithVote } from '../../src/types/post.types';
 
-// Extend the Post type to include voting information
-type PostWithVote = Post & {
-  author: {
-    id: string;
-    username: string;
-    avatar: string;
-    karma: number;
-  };
-  community: {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    members: number;
-    createdAt: string;
-  };
-  userVote?: 'up' | 'down' | null;
-  score?: number;
-  upvotes?: number;
-  downvotes?: number;
-  commentCount?: number;
-  isPinned?: boolean;
-  updatedAt?: string;
-  tags: string[];
-};
+// Using shared PostWithVote type from src/types/post.types
 import { Card } from '../../components/ui/card';
 import { postService } from '../../src/services/postService';
 import { voteService } from '../../src/services/voteService';
@@ -49,74 +26,109 @@ import { useAuth } from '../../src/hooks/useAuth';
 interface PostListProps {
   initialPosts?: Post[];
   showJoinedCommunities?: boolean;
+  popular?: boolean;
   className?: string;
 }
 
-export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostListProps) => {
+export const PostList = ({ initialPosts, showJoinedCommunities = false, popular = false, className }: PostListProps) => {
   // Cast initialPosts to PostWithVote[] if it exists, otherwise use an empty array
+  // Initialize state
   const [posts, setPosts] = useState<PostWithVote[]>(() => {
     if (!initialPosts) return [];
-    return initialPosts.map(post => ({
-      ...post,
-      author: {
-        ...post.author,
-        avatar: (post.author as any).avatarUrl || '',
-        avatarUrl: (post.author as any).avatarUrl || '',
-        karma: (post.author as any).karma || 0
-      },
-      community: {
-        ...post.community,
-        icon: (post.community as any).iconUrl || '',
-        iconUrl: (post.community as any).iconUrl || '',
-        memberCount: (post.community as any).memberCount || 0,
-        members: (post.community as any).memberCount || 0
-      },
-      userVote: (post as any).userVote || null,
-      score: post.score || 0,
-      upvotes: (post as any).upvotes || 0,
-      downvotes: (post as any).downvotes || 0,
-      commentCount: (post as any).commentCount || 0,
-      isPinned: (post as any).isPinned || false,
-      updatedAt: (post as any).updatedAt || post.createdAt,
-      tags: (post as any).tags?.map((tag: { id: string; name: string; usageCount: number; createdAt: string; updatedAt: string }) => ({
-        id: tag.id,
-        name: tag.name,
-        usageCount: tag.usageCount,
-        createdAt: tag.createdAt,
-        updatedAt: tag.updatedAt
-      })) || []
-    } as PostWithVote));
+    return initialPosts.map((post) => {
+      // Ensure all required fields are present with proper defaults
+      const author = {
+        id: post.author?.id || '',
+        username: post.author?.username || 'deleted',
+        avatarUrl: post.author?.avatarUrl || ''
+      };
+
+      const community = {
+        id: post.community?.id || '',
+        name: post.community?.name || 'deleted',
+        description: post.community?.description || '',
+        iconUrl: post.community?.iconUrl || '',
+        memberCount: post.community?.memberCount || 0,
+        createdAt: post.community?.createdAt || new Date().toISOString()
+      };
+
+      // Create a new object with only the properties that PostWithVote expects
+      const postWithVote: PostWithVote = {
+        ...post,
+        author,
+        community,
+        userVote: post.userVote || null,
+        upvotes: post.upvotes || 0,
+        downvotes: post.downvotes || 0,
+        commentCount: post.commentCount || 0,
+        isPinned: post.isPinned || false,
+        updatedAt: post.updatedAt || post.createdAt,
+        tags: post.tags || []
+      };
+
+      return postWithVote;
+    });
   });
-  const { user, setIsLoginModalOpen } = useAuth();
-  const [loading, setLoading] = useState<boolean>(true);
+
+  const [loading, setLoading] = useState<boolean>(!initialPosts);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('new');
-  const [timeFilter, setTimeFilter] = useState<string>('today');
+  const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot');
+  const [timeFilter, setTimeFilter] = useState<string>('all');
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  const [votingStates, setVotingStates] = useState<{[key: string]: boolean}>({});
+  const [votingStates, setVotingStates] = useState<Record<string, boolean>>({});
+  const { user } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
-    triggerOnce: false,
   });
   const { toast } = useToast();
+  
+  // Reset posts and fetch when popular prop changes
+  useEffect(() => {
+    const fetchInitialPosts = async () => {
+      setPosts([]);
+      setPage(1);
+      setHasMore(true);
+      await fetchPosts(1, sortBy, true);
+    };
+    
+    fetchInitialPosts();
+  }, [popular, sortBy]);
 
   const fetchPosts = useCallback(async (pageNum: number, sort: string, reset = false) => {
     try {
       if (pageNum === 1) setLoading(true);
       
-      const response = showJoinedCommunities 
-        ? await postService.getJoinedCommunityPosts({
-            page: pageNum,
-            limit: 10,
-            sort
-          })
-        : await postService.getPosts({
-            page: pageNum,
-            limit: 10,
-            sort
-          });
+      let response;
+      if (popular) {
+        // For popular posts, we only fetch once (no pagination)
+        if (pageNum > 1) return;
+        const popularResponse = await postService.getPopularPosts(10);
+        response = {
+          items: popularResponse.items,
+          meta: {
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: popularResponse.items.length,
+            itemCount: popularResponse.items.length,
+            itemsPerPage: 10
+          }
+        };
+      } else if (showJoinedCommunities) {
+        response = await postService.getJoinedCommunityPosts({
+          page: pageNum,
+          limit: 10,
+          sort
+        });
+      } else {
+        response = await postService.getPosts({
+          page: pageNum,
+          limit: 10,
+          sort
+        });
+      }
       
       console.log('API Response:', response);
       
@@ -124,65 +136,63 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
       const items = Array.isArray(response?.items) ? response.items : [];
       
       // Map API response to PostWithVote type
-      const uiPosts: PostWithVote[] = items.map((apiPost: any) => {
-        const post: PostWithVote = {
-          id: apiPost.id,
-          title: apiPost.title,
-          content: apiPost.content || '',
-          imageUrl: apiPost.imageUrl,
-          linkUrl: apiPost.linkUrl,
-          type: apiPost.type,
-          contentType: apiPost.contentType || 'text',
-          author: {
-            id: apiPost.author.id,
-            username: apiPost.author.username,
-            avatar: apiPost.author.avatarUrl || '',
-            avatarUrl: apiPost.author.avatarUrl || '',
-            karma: apiPost.author.karma || 0
-          },
-          community: {
-            id: apiPost.community.id,
-            name: apiPost.community.name,
-            icon: apiPost.community.iconUrl || '',
-            iconUrl: apiPost.community.iconUrl || '',
-            description: apiPost.community.description || '',
-            members: apiPost.community.memberCount || 0,
-            memberCount: apiPost.community.memberCount || 0,
-            createdAt: apiPost.community.createdAt
-          },
-          score: apiPost.score || 0,
-          votes: apiPost.score || 0,
-          upvotes: apiPost.upvotes || 0,
-          downvotes: apiPost.downvotes || 0,
-          commentCount: apiPost.commentCount || 0,
-          isPinned: apiPost.isPinned || false,
-          createdAt: apiPost.createdAt,
-          updatedAt: apiPost.updatedAt || apiPost.createdAt,
-          tags: apiPost.tags || [],
-          userVote: apiPost.userVote || null
-        };
-        return post;
-      });
+      const uiPosts: PostWithVote[] = items.map((apiPost: any) => ({
+        id: apiPost.id,
+        title: apiPost.title,
+        content: apiPost.content || '',
+        imageUrl: apiPost.imageUrl,
+        linkUrl: apiPost.linkUrl,
+        type: apiPost.type,
+        contentType: apiPost.contentType || 'text',
+        author: {
+          id: apiPost.author.id,
+          username: apiPost.author.username,
+          avatar: apiPost.author.avatarUrl || '',
+          avatarUrl: apiPost.author.avatarUrl || '',
+          karma: apiPost.author.karma || 0
+        },
+        community: {
+          id: apiPost.community.id,
+          name: apiPost.community.name,
+          icon: apiPost.community.iconUrl || '',
+          iconUrl: apiPost.community.iconUrl || '',
+          description: apiPost.community.description || '',
+          members: apiPost.community.memberCount || 0,
+          memberCount: apiPost.community.memberCount || 0,
+          createdAt: apiPost.community.createdAt
+        },
+        score: apiPost.score || 0,
+        votes: apiPost.score || 0,
+        upvotes: apiPost.upvotes || 0,
+        downvotes: apiPost.downvotes || 0,
+        commentCount: apiPost.commentCount || 0,
+        isPinned: apiPost.isPinned || false,
+        createdAt: apiPost.createdAt,
+        updatedAt: apiPost.updatedAt || apiPost.createdAt,
+        tags: apiPost.tags || [],
+        userVote: apiPost.userVote || null
+      }));
       
-      setPosts(prev => reset ? uiPosts : [...prev, ...uiPosts] as PostWithVote[]);
-      setHasMore(response?.meta?.currentPage < response?.meta?.totalPages);
+      setPosts(prev => (reset || popular) ? uiPosts : [...prev, ...uiPosts] as PostWithVote[]);
+      setHasMore(!popular && response?.meta?.currentPage < response?.meta?.totalPages);
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
       toast({
-      title: "Error",
-      description: "Failed to load posts",
-      variant: "destructive"
-    });
+        title: "Error",
+        description: "Failed to load posts",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, [showJoinedCommunities, toast]);
+  }, [showJoinedCommunities, popular, toast]);
   
   // Initial load and when sort changes
   useEffect(() => {
-    fetchPosts(1, sortBy, true);
-  }, [sortBy, showJoinedCommunities, fetchPosts]);
+    fetchPosts(1, sortBy);
+  }, [sortBy, showJoinedCommunities, popular, fetchPosts]);
   
 
   const handleSortChange = (value: 'hot' | 'new' | 'top') => {
@@ -396,20 +406,26 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false }: PostLi
                   post={{
                     ...post,
                     author: {
-                      ...post.author,
-                      avatar: 'avatar' in post.author ? post.author.avatar : (post.author as any).avatarUrl || ''
+                      id: post.author.id,
+                      username: post.author.username,
+                      avatarUrl: 'avatarUrl' in post.author ? post.author.avatarUrl : (post.author as any).avatar || ''
                     },
                     community: {
                       id: post.community.id,
                       name: post.community.name,
                       description: post.community.description || '',
-                      icon: 'icon' in post.community ? post.community.icon : (post.community as any).iconUrl || '',
-                      members: 'members' in post.community ? post.community.members : (post.community as any).memberCount || 0,
+                      iconUrl: 'iconUrl' in post.community ? post.community.iconUrl : (post.community as any).icon || '',
+                      memberCount: 'memberCount' in post.community ? post.community.memberCount : (post.community as any).members || 0,
                       createdAt: post.community.createdAt
                     },
-                    userVote: post.userVote,
-                    score: post.score
-                  } as PostWithVote}
+                    userVote: post.userVote || null,
+                    upvotes: post.upvotes || 0,
+                    downvotes: post.downvotes || 0,
+                    commentCount: post.commentCount || 0,
+                    isPinned: post.isPinned || false,
+                    updatedAt: post.updatedAt || post.createdAt,
+                    tags: post.tags || []
+                  }}
                   onVote={handleVote}
                   onRemoveVote={handleRemoveVote}
                   isVoting={votingStates[post.id] || false}
