@@ -341,7 +341,7 @@ const Header = () => {
                 variant="default"
                 size="icon"
                 className="sm:hidden h-9 w-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={() => router.push('/submit')}
+                onClick={() => router.push('/create-post')}
               >
                 <Plus className="h-5 w-5" />
                 <span className="sr-only">Create Post</span>
