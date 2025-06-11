@@ -77,8 +77,8 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [votingStates, setVotingStates] = useState<Record<string, boolean>>({});
-  const { user } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
   
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
@@ -100,6 +100,13 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
   const fetchPosts = useCallback(async (pageNum: number, sort: string, reset = false) => {
     try {
       if (pageNum === 1) setLoading(true);
+      
+      // If trying to fetch joined communities but user is not authenticated
+      if (showJoinedCommunities && !isAuthenticated) {
+        setError('Please log in to view posts from your communities');
+        setLoading(false);
+        return;
+      }
       
       let response;
       if (popular) {
@@ -317,8 +324,42 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
           </div>
         </Card>
       ) : error ? (
-        <Card className="p-4">
-          <div className="text-center p-4 text-red-500">{error}</div>
+        <Card className="p-6 text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-3">
+              <svg 
+                className="h-8 w-8 text-gray-500 dark:text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={1.5} 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {showJoinedCommunities && !isAuthenticated 
+                ? 'Authentication Required' 
+                : 'Error Loading Posts'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+              {showJoinedCommunities && !isAuthenticated 
+                ? 'You need to be logged in to view posts from your communities.'
+                : error}
+            </p>
+              {/* {showJoinedCommunities && !isAuthenticated && (
+                <Button 
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="mt-2"
+                >
+                  Log In / Sign Up
+                </Button>
+              )} */}
+          </div>
         </Card>
       ) : mostRecentPost ? (
         <PostCard 
