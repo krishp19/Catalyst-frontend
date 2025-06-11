@@ -428,7 +428,7 @@ const ProfilePage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Your Posts</CardTitle>
-                <CardDescription>Posts you've created</CardDescription>
+                <CardDescription>Posts you&apos;ve created</CardDescription>
               </CardHeader>
               <CardContent>
                 {postsLoading ? (
@@ -496,7 +496,7 @@ const ProfilePage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Your Comments</CardTitle>
-                <CardDescription>Comments you've made</CardDescription>
+                <CardDescription>Comments you&apos;ve made</CardDescription>
               </CardHeader>
               <CardContent>
                 {commentsLoading ? (
@@ -547,7 +547,7 @@ const ProfilePage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Upvoted Content</CardTitle>
-                <CardDescription>Posts and comments you've upvoted</CardDescription>
+                <CardDescription>Posts and comments you&apos;ve upvoted</CardDescription>
               </CardHeader>
               <CardContent>
                 {profile?.upvoted?.length ? (
@@ -604,7 +604,7 @@ const ProfilePage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Downvoted Content</CardTitle>
-                <CardDescription>Posts and comments you've downvoted</CardDescription>
+                <CardDescription>Posts and comments you&apos;ve downvoted</CardDescription>
               </CardHeader>
               <CardContent>
                 {profile?.downvoted?.length ? (

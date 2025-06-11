@@ -128,7 +128,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ onNavigate }) => {
     if (joinedCommunities.length === 0) {
       return (
         <div className="px-4 py-2 text-sm text-muted-foreground">
-          You haven't joined any communities yet
+          You haven&apos;t joined any communities yet
         </div>
       );
     }

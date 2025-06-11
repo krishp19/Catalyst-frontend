@@ -239,7 +239,7 @@ export default function NotificationsPage() {
                     <div className="text-center py-16 text-muted-foreground">
                       <Bell className="mx-auto h-12 w-12 mb-4 opacity-20" />
                       <p className="text-lg font-medium">No notifications yet</p>
-                      <p className="text-sm mt-1">When you get notifications, they'll appear here</p>
+                      <p className="text-sm mt-1">When you get notifications, they&apos;ll appear here</p>
                     </div>
                   ) : (
                     <div className="divide-y">
@@ -308,7 +308,7 @@ export default function NotificationsPage() {
                   <MessageSquare className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">Your messages</h3>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-md mx-auto">
-                    When you receive messages, they'll appear here. This feature is coming soon!
+                    When you receive messages, they&apos;ll appear here. This feature is coming soon!
                   </p>
                 </CardContent>
               </Card>
