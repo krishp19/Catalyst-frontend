@@ -42,7 +42,14 @@ export const useSearch = () => {
     }
   }, []);
 
-  const handleResultClick = useCallback(() => {
+  const handleResultClick = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      const target = e.currentTarget as HTMLAnchorElement;
+      if (target.href) {
+        window.location.href = target.href;
+      }
+    }
     setIsOpen(false);
   }, []);
 

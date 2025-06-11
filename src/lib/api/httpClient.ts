@@ -178,11 +178,9 @@ httpClient.interceptors.request.use((config) => {
 // Add response interceptor for debugging
 httpClient.interceptors.response.use(
   (response) => {
-    console.log('Response received:', response); // Debug log
     return response;
   },
   (error) => {
-    console.error('Request failed:', error.response || error); // Debug log
     return Promise.reject(error);
   }
 );

@@ -24,21 +24,16 @@ export const TopCommunities = () => {
 
   const fetchCommunities = useCallback(async () => {
     try {
-      console.log('Fetching communities and joined status...');
       const [communitiesData, joinedData] = await Promise.all([
         communityService.getCommunities(),
         isAuthenticated ? communityService.getMyJoinedCommunities() : Promise.resolve([]),
       ]);
-      
-      console.log('Fetched communities:', communitiesData.items);
-      console.log('Fetched joined communities:', joinedData);
       
       setCommunities(communitiesData.items);
       
       // Create a Set of joined community IDs for quick lookup
       if (isAuthenticated) {
         const joinedIds = new Set(joinedData.map((c: any) => c.id));
-        console.log('Setting joined community IDs:', Array.from(joinedIds));
         setJoinedCommunities(joinedIds);
       } else {
         console.log('User not authenticated, clearing joined communities');
