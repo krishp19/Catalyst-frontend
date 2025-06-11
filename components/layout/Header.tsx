@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Search, Bell, MessageSquare, ChevronDown, Moon, Sun, User, Image as ImageIcon, Users, Star, LogOut, Plus, XCircle, Menu } from 'lucide-react';
+import { Search, Bell, MessageSquare, ChevronDown, User, Image as ImageIcon, Users, Star, LogOut, Plus, XCircle, Menu } from 'lucide-react';
 import { notificationService } from '@/services/notificationService';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -85,10 +85,7 @@ const Header = () => {
     setIsOpen(false);
   }, [pathname, setQuery, setIsOpen]);
 
-  // Toggle theme
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
+  // Theme is now managed elsewhere
 
   // Fetch unread notification count
   useEffect(() => {
@@ -402,10 +399,6 @@ const Header = () => {
                   <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
                     <Star className="h-4 w-4" />
                     <span>Premium</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={toggleTheme}>
-                    {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="my-2" />
                   <DropdownMenuItem className="flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" onClick={() => dispatch(logout())}>
