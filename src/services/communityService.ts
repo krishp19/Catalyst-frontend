@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { httpClient } from '../lib/api/httpClient';
 
+import { Topic } from '../types/topic.types';
+
 export interface Community {
   id: string;
   name: string;
@@ -11,6 +13,7 @@ export interface Community {
   creatorId: string;
   createdAt: string;
   updatedAt: string;
+  topics?: Topic[];
   creator: {
     id: string;
     username: string;
@@ -48,6 +51,17 @@ class CommunityService {
 
   async getCommunities(page = 1, limit = 10): Promise<ApiResponse<Community>> {
     const response = await httpClient.get(`${this.baseUrl}?page=${page}&limit=${limit}`);
+    return response.data;
+  }
+
+  async createCommunity(communityData: {
+    name: string;
+    description: string;
+    iconUrl?: string | null;
+    bannerUrl?: string | null;
+    topics?: string[];
+  }): Promise<Community> {
+    const response = await httpClient.post(this.baseUrl, communityData);
     return response.data;
   }
 
@@ -94,6 +108,17 @@ class CommunityService {
       });
       return false;
     }
+  }
+
+  async updateCommunity(communityId: string, updateData: {
+    name?: string;
+    description?: string;
+    bannerUrl?: string | null;
+    iconUrl?: string | null;
+    topics?: string[];
+  }): Promise<Community> {
+    const response = await httpClient.patch(`${this.baseUrl}/${communityId}`, updateData);
+    return response.data;
   }
 
   async getCommunityMembers(communityId: string, page = 1, limit = 10) {

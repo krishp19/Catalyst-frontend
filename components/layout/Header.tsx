@@ -18,6 +18,7 @@ import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { logout } from '../../src/store/features/auth/authSlice';
 import { LoginModal } from '../../components/auth/LoginModal';
 import { SignupModal } from '../../components/auth/SignupModal';
+import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import defaultAvatar from '../../assets/avatar.webp';
 import { SearchResults } from '../search/SearchResults';
@@ -31,8 +32,13 @@ const Header = () => {
   const { user, isAuthenticated } = useAppSelector((state: any) => state.auth);
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
-  const [isSignupModalOpen, setIsSignupModalOpen] = React.useState(false);
+  // Use auth context for modal state management
+  const { 
+    isLoginModalOpen, 
+    setIsLoginModalOpen, 
+    isSignupModalOpen, 
+    setIsSignupModalOpen 
+  } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useAppDispatch();

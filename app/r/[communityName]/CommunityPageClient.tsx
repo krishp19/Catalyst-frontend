@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Community } from '../../../src/services/communityService';
+import { EditCommunityModal } from '../../../components/communities/EditCommunityModal';
 import { communityService } from '../../../src/services/communityService';
 import { postService, PostSort } from '../../../src/services/postService';
 import { voteService } from '../../../src/services/voteService';
@@ -28,7 +29,11 @@ import {
   Bookmark,
   FileText,
   MessageSquareMore,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -41,6 +46,7 @@ interface CommunityPageClientProps {
 export default function CommunityPageClient({ initialCommunity }: CommunityPageClientProps) {
   const [community, setCommunity] = useState<Community>(initialCommunity);
   const [isMember, setIsMember] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   // Extend Post type to include showOptions for dropdown
@@ -53,7 +59,7 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sort, setSort] = useState<PostSort>(PostSort.HOT);
-  const { user, setIsLoginModalOpen } = useAuth();
+  const { user, setIsLoginModalOpen: setAuthLoginModalOpen } = useAuth();
   const router = useRouter();
 
   // Add this temporary debug section
@@ -133,12 +139,26 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
     fetchPosts();
   }, [community.id, currentPage, sort]);
 
+  const handleEditCommunity = () => {
+    if (!user) {
+      setAuthLoginModalOpen(true);
+      return;
+    }
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh the community data after successful edit
+    router.refresh();
+    setIsEditModalOpen(false);
+  };
+
   const handleJoin = async () => {
     console.log('handleJoin called, current isMember:', isMember);
     
     if (!user) {
       console.log('No user, opening login modal');
-      setIsLoginModalOpen(true);
+      setAuthLoginModalOpen(true);
       return;
     }
 
@@ -239,7 +259,7 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
     
     if (!user) {
       console.log('No user found, opening login modal');
-      setIsLoginModalOpen(true);
+      setAuthLoginModalOpen(true);
       return;
     }
 
@@ -357,6 +377,16 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
                 <Share2 className="mr-2 h-4 w-4" />
                 Share
               </Button>
+              {user?.id === community.creator.id && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleEditCommunity}
+                  className="w-full md:w-auto border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/20 transition-all duration-200"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Community
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -734,6 +764,21 @@ export default function CommunityPageClient({ initialCommunity }: CommunityPageC
           </div>
         </div>
       </div>
+      
+      {/* Edit Community Modal */}
+      <EditCommunityModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        community={{
+          id: community.id,
+          name: community.name,
+          description: community.description,
+          iconUrl: community.iconUrl || undefined,
+          bannerUrl: community.bannerUrl || undefined,
+          topics: community.topics || []
+        }}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 } 

@@ -6,7 +6,6 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { ImagePlus, X, ChevronLeft, ChevronRight, Check, Pencil, Plus, Search } from 'lucide-react';
-import { httpClient } from '../../src/lib/api/httpClient';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import { Topic } from '@/types/topic.types';
@@ -14,7 +13,7 @@ import { topicService } from '@/services/topic.service';
 import { communityService } from '../../src/services/communityService';
 
 interface CommunityData {
-  id?: string;
+  id: string;
   name: string;
   description: string;
   iconUrl?: string;
@@ -22,33 +21,34 @@ interface CommunityData {
   topics?: Topic[];
 }
 
-interface CreateCommunityModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  community?: CommunityData;
-  onSuccess?: () => void;
-}
-
 interface Step {
   id: string;
   name: string;
 }
 
-export function CreateCommunityModal({ open, onOpenChange, community, onSuccess }: CreateCommunityModalProps) {
+interface EditCommunityModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  community: CommunityData;
+  onSuccess?: () => void;
+}
+
+export function EditCommunityModal({ open, onOpenChange, community, onSuccess }: EditCommunityModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [name, setName] = useState(community?.name || '');
-  const [description, setDescription] = useState(community?.description || '');
+  const [name, setName] = useState(community.name);
+  const [description, setDescription] = useState(community.description);
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [iconPreview, setIconPreview] = useState<string>(community?.iconUrl || '');
-  const [bannerPreview, setBannerPreview] = useState<string>(community?.bannerUrl || '');
+  const [iconPreview, setIconPreview] = useState<string>(community.iconUrl || '');
+  const [bannerPreview, setBannerPreview] = useState<string>(community.bannerUrl || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([]);
-  const [selectedTopics, setSelectedTopics] = useState<Topic[]>(community?.topics || []);
+  const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
-  
+  const { theme } = useTheme();
+
   // Reset form when community prop changes
   useEffect(() => {
     if (community) {
@@ -57,17 +57,32 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
       setIconPreview(community.iconUrl || '');
       setBannerPreview(community.bannerUrl || '');
       setSelectedTopics(community.topics || []);
-    } else {
-      setName('');
-      setDescription('');
-      setIconPreview('');
-      setBannerPreview('');
-      setSelectedTopics([]);
     }
   }, [community]);
-  const { theme } = useTheme();
 
-  // Search for topics
+  // Load community topics when the component mounts and modal is open
+  useEffect(() => {
+    const loadCommunityTopics = async () => {
+      if (community?.id) {
+        try {
+          setIsLoadingTopics(true);
+          const topics = await topicService.getCommunityTopics(community.id);
+          setSelectedTopics(topics);
+        } catch (error) {
+          console.error('Error loading community topics:', error);
+          toast.error('Failed to load community topics');
+        } finally {
+          setIsLoadingTopics(false);
+        }
+      }
+    };
+
+    if (open) {
+      loadCommunityTopics();
+    }
+  }, [community?.id, open]);
+
+  // Search for topics based on user input
   useEffect(() => {
     if (!searchQuery.trim()) {
       setAvailableTopics([]);
@@ -104,176 +119,15 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
   }, [searchQuery, selectedTopics]);
 
   const handleTopicSelect = (topic: Topic) => {
-    if (!selectedTopics.some(t => t.id === topic.id)) {
+    if (!selectedTopics.some((t) => t.id === topic.id)) {
       setSelectedTopics([...selectedTopics, topic]);
-      setSearchQuery('');
-      setAvailableTopics([]);
     }
+    setSearchQuery('');
+    setAvailableTopics([]);
   };
 
   const removeTopic = (topicId: string) => {
-    setSelectedTopics(selectedTopics.filter(topic => topic.id !== topicId));
-  };
-
-  const handleImageUpload = async (file: File, type: 'icon' | 'banner') => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'catalyst_preset');
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-      if (type === 'icon') {
-        setIconPreview(data.secure_url);
-      } else {
-        setBannerPreview(data.secure_url);
-      }
-      return data.secure_url;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('Failed to upload image. Please try again.', {
-        description: 'Make sure the image is not too large and is in a supported format.',
-      });
-      return null;
-    }
-  };
-
-  const validateCommunityName = (name: string) => {
-    const regex = /^[a-zA-Z0-9_]{3,21}$/;
-    return regex.test(name);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // If not on the final step, just go to the next step
-    if (currentStep < 3) {
-      // Validate name on first step
-      if (currentStep === 1 && (!name || !validateCommunityName(name))) {
-        toast.error('Invalid community name', {
-          description: 'Community names must be 3-21 characters long and can only contain letters, numbers, or underscores.'
-        });
-        return;
-      }
-      setCurrentStep(prev => prev + 1);
-      return;
-    }
-    
-    // Final submission
-    if (!name || !validateCommunityName(name)) {
-      toast.error('Invalid community name', {
-        description: 'Community names must be 3-21 characters long and can only contain letters, numbers, or underscores.'
-      });
-      return;
-    }
-    
-    setIsSubmitting(true);
-
-    try {
-      let iconUrl = iconPreview;
-      let bannerUrl = bannerPreview;
-
-      if (iconFile && !iconPreview) {
-        iconUrl = await handleImageUpload(iconFile, 'icon');
-        if (!iconUrl) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      
-      if (bannerFile && !bannerPreview) {
-        bannerUrl = await handleImageUpload(bannerFile, 'banner');
-        if (!bannerUrl) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      let communityId = community?.id;
-      
-      if (communityId) {
-        // Update existing community using the communityService
-        await communityService.updateCommunity(communityId, {
-          name,
-          description,
-          iconUrl: iconPreview || null,
-          bannerUrl: bannerPreview || null,
-          topics: selectedTopics.map(topic => topic.id)
-        });
-        
-        // Note: The topic updates are now handled by the backend in a single transaction
-        
-        toast.success('Community updated successfully!');
-      } else {
-        // Create new community using the communityService
-        const newCommunity = await communityService.createCommunity({
-          name,
-          description,
-          iconUrl: iconPreview || null,
-          bannerUrl: bannerPreview || null,
-          topics: selectedTopics.map(t => t.id)
-        });
-        
-        communityId = newCommunity.id;
-        
-        toast.success('Community created successfully!', {
-          description: 'Your community is now live and ready for members.',
-        });
-      }
-      
-      // Reset form and close modal
-      onOpenChange(false);
-      setCurrentStep(1);
-      
-      // Only reset form if not in edit mode
-      if (!community) {
-        setName('');
-        setDescription('');
-        setIconFile(null);
-        setBannerFile(null);
-        setIconPreview('');
-        setBannerPreview('');
-        setSelectedTopics([]);
-      }
-      
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (error: any) {
-      console.error('Error creating community:', error);
-      
-      if (error.response?.status === 409) {
-        toast.error('Community name already exists', {
-          description: 'Please choose a different name for your community.',
-          action: {
-            label: 'Try Again',
-            onClick: () => setName(''),
-          },
-        });
-      } else if (error.response?.status === 400) {
-        toast.error('Invalid community details', {
-          description: 'Please check your input and try again.',
-        });
-      } else if (error.response?.status === 401) {
-        toast.error('Authentication required', {
-          description: 'Please log in to create a community.',
-        });
-      } else {
-        toast.error('Failed to create community', {
-          description: 'An unexpected error occurred. Please try again later.',
-        });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    setSelectedTopics(selectedTopics.filter((t) => t.id !== topicId));
   };
 
   const renderStepOne = () => (
@@ -470,7 +324,7 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload a square image for your community&apos;s icon.
+                  Upload a square image for your community's icon.
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Recommended: 256x256px, JPG or PNG
@@ -575,17 +429,230 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
     { id: '3', name: 'Images' }
   ];
 
+  const handleImageUpload = async (file: File, type: 'icon' | 'banner'): Promise<string | null> => {
+    try {
+      setIsLoading(true);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'profile-avatars');
+      
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const data = await response.json();
+      return data.secure_url;
+      
+    } catch (error) {
+      console.error(`Error uploading ${type}:`, error);
+      toast.error(`Failed to upload ${type}`, {
+        description: 'Please try again with a different image.',
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const validateCommunityName = (name: string) => {
+    const regex = /^[a-zA-Z0-9_]{3,21}$/;
+    return regex.test(name);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted, current step:', currentStep);
+    
+    // If not on the final step, just go to the next step
+    if (currentStep < 3) {
+      // Validate name on first step
+      if (currentStep === 1 && (!name || !validateCommunityName(name))) {
+        toast.error('Invalid community name', {
+          description: 'Community names must be 3-21 characters long and can only contain letters, numbers, or underscores.'
+        });
+        return;
+      }
+      setCurrentStep(prev => prev + 1);
+      return;
+    }
+    
+    // Final submission
+    if (!name || !validateCommunityName(name)) {
+      toast.error('Invalid community name', {
+        description: 'Community names must be 3-21 characters long and can only contain letters, numbers, or underscores.'
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+      // Prepare update data with only changed fields
+      const updateData: {
+        name?: string;
+        description?: string;
+        iconUrl?: string | null;
+        bannerUrl?: string | null;
+        topics?: string[];
+      } = {};
+
+      // Only include changed fields
+      if (name !== community.name) {
+        updateData.name = name;
+      }
+      
+      if (description !== community.description) {
+        updateData.description = description || '';
+      }
+      
+      // Only handle image uploads if new files were selected
+      if (iconFile) {
+        const uploadedIconUrl = await handleImageUpload(iconFile, 'icon');
+        if (!uploadedIconUrl) {
+          setIsSubmitting(false);
+          return;
+        }
+        updateData.iconUrl = uploadedIconUrl;
+      } else if (iconPreview !== community.iconUrl) {
+        // If no new file but preview URL has changed (e.g., removed)
+        updateData.iconUrl = iconPreview || null;
+      }
+      
+      if (bannerFile) {
+        const uploadedBannerUrl = await handleImageUpload(bannerFile, 'banner');
+        if (!uploadedBannerUrl) {
+          setIsSubmitting(false);
+          return;
+        }
+        updateData.bannerUrl = uploadedBannerUrl;
+      } else if (bannerPreview !== community.bannerUrl) {
+        // If no new file but preview URL has changed (e.g., removed)
+        updateData.bannerUrl = bannerPreview || null;
+      }
+      
+      // Only include topics if they've changed
+      const currentTopicIds = community.topics?.map(t => t.id) || [];
+      const newTopicIds = selectedTopics.map(t => t.id);
+      
+      if (JSON.stringify(currentTopicIds) !== JSON.stringify(newTopicIds)) {
+        updateData.topics = newTopicIds;
+      }
+      
+      console.log('Final updateData before API call:', JSON.stringify(updateData, null, 2));
+      
+      // Only proceed with the update if there are actual changes
+      console.log('Preparing to update community with data:', updateData);
+      
+      if (Object.keys(updateData).length > 0) {
+        console.log('Calling communityService.updateCommunity with:', {
+          id: community.id,
+          data: updateData
+        });
+        
+        try {
+          const response = await communityService.updateCommunity(community.id, updateData);
+          console.log('Community update successful, response:', response);
+          toast.success('Community updated successfully!');
+        } catch (error) {
+          console.error('Error in communityService.updateCommunity:', error);
+          throw error; // Re-throw to be caught by the outer catch block
+        }
+      } else {
+        console.log('No changes detected to save');
+        toast.info('No changes to save');
+        return;
+      }
+      
+      // Close modal and reset form
+      onOpenChange(false);
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error: any) {
+      console.error('Error updating community:', error);
+      
+      if (error.response?.status === 409) {
+        toast.error('Community name already exists', {
+          description: 'Please choose a different name for your community.',
+        });
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid community details', {
+          description: 'Please check your input and try again.',
+        });
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required', {
+          description: 'Please log in to update the community.',
+        });
+      } else if (error.response?.status === 403) {
+        toast.error('Permission denied', {
+          description: 'You do not have permission to update this community.',
+        });
+      } else {
+        toast.error('Failed to update community', {
+          description: 'An unexpected error occurred. Please try again later.',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'icon' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Invalid file type', {
+        description: 'Please upload an image file (JPEG, PNG, etc.)',
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('File too large', {
+        description: 'Please upload an image smaller than 5MB',
+      });
+      return;
+    }
+
+    // Set file and preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      if (type === 'icon') {
+        setIconFile(file);
+        setIconPreview(result);
+      } else {
+        setBannerFile(file);
+        setBannerPreview(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (!open) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <DialogHeader>
-          <DialogTitle>{community ? 'Edit Community' : 'Create Community'}</DialogTitle>
+          <DialogTitle>Edit Community</DialogTitle>
           <DialogDescription>
-            {community 
-              ? 'Update your community details and settings.'
-              : 'Create a new community to share and discuss content with others.'}
+            Update your community details and settings.
           </DialogDescription>
         </DialogHeader>
 
@@ -630,6 +697,7 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
           {currentStep === 1 && renderStepOne()}
           {currentStep === 2 && renderStepTwo()}
           {currentStep === 3 && renderStepThree()}
+          
           <div className="flex justify-between pt-4">
             <Button
               type="button"
@@ -653,7 +721,7 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
                 </Button>
               ) : (
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating...' : 'Create Community'}
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </Button>
               )}
             </div>
