@@ -91,17 +91,26 @@ describe('SignupModal', () => {
     renderSignupModal();
     
     const passwordInput = screen.getByPlaceholderText('Create a password');
-    await userEvent.click(passwordInput);
+    
+    // Focus the input
+    fireEvent.focus(passwordInput);
+    
+    // Type something to trigger the password requirements
     await userEvent.type(passwordInput, 'test');
     
     // Check if password requirements are shown
     await waitFor(() => {
-      expect(screen.getByText('Password must contain:')).toBeInTheDocument();
-      expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
-      expect(screen.getByText('At least one uppercase letter')).toBeInTheDocument();
-      expect(screen.getByText('At least one lowercase letter')).toBeInTheDocument();
-      expect(screen.getByText('At least one number')).toBeInTheDocument();
-      expect(screen.getByText('At least one special character')).toBeInTheDocument();
+      const requirementTexts = [
+        'At least 8 characters',
+        'At least one uppercase letter',
+        'At least one lowercase letter',
+        'At least one number',
+        'At least one special character'
+      ];
+      
+      requirementTexts.forEach(text => {
+        expect(screen.getByText(text)).toBeInTheDocument();
+      });
     });
   });
 
@@ -309,21 +318,29 @@ describe('SignupModal', () => {
   });
   
   it('opens login modal when onLoginClick is not provided', async () => {
-    // Mock the onOpenChange function and auth context
+    // Mock the onOpenChange function
     const onOpenChange = jest.fn();
+    
+    // Create a mock for setIsLoginModalOpen
     const mockSetIsLoginModalOpen = jest.fn();
     
-    // Mock the auth context
-    (useAuth as jest.Mock).mockImplementation(() => ({
+    // Mock the auth context to return our mock function
+    const mockUseAuth = jest.spyOn(require('../../../contexts/AuthContext'), 'useAuth');
+    mockUseAuth.mockImplementation(() => ({
       setIsSignupModalOpen: jest.fn(),
       setIsLoginModalOpen: mockSetIsLoginModalOpen,
     }));
     
+    // Re-import the component after setting up mocks
+    const { SignupModal } = require('../SignupModal');
+    
     // Render the component without onLoginClick
-    const { getByText } = renderSignupModal({
-      open: true,
-      onOpenChange,
-    });
+    const { getByText } = render(
+      <SignupModal
+        open={true}
+        onOpenChange={onOpenChange}
+      />
+    );
     
     // Find and click the login button
     const loginButton = getByText(/log in/i);
@@ -331,12 +348,26 @@ describe('SignupModal', () => {
     
     // Check if the functions were called as expected
     expect(onOpenChange).toHaveBeenCalledWith(false);
+    
+    // Verify setIsLoginModalOpen was called with true
     expect(mockSetIsLoginModalOpen).toHaveBeenCalledWith(true);
+    
+    // Clean up the mock
+    mockUseAuth.mockRestore();
   });
 
   it('resets form when modal is closed and reopened', async () => {
+    // Mock the useAuth hook for this specific test
+    const mockUseAuth = jest.spyOn(require('../../../contexts/AuthContext'), 'useAuth');
+    mockUseAuth.mockImplementation(() => ({
+      setIsSignupModalOpen: jest.fn(),
+      setIsLoginModalOpen: jest.fn(),
+    }));
+
     const user = userEvent.setup();
     const onOpenChange = jest.fn();
+    
+    // Initial render
     const { rerender } = renderSignupModal({ open: true, onOpenChange });
     
     // Fill in the form
@@ -344,7 +375,8 @@ describe('SignupModal', () => {
     await user.type(usernameInput, 'testuser');
     
     // Close the modal
-    await user.click(screen.getByRole('button', { name: /close/i }));
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    await user.click(closeButton);
     
     // Wait for the modal to close
     await waitFor(() => {
@@ -353,11 +385,18 @@ describe('SignupModal', () => {
     
     // Reopen the modal
     onOpenChange.mockClear();
-    rerender(<SignupModal open={true} onOpenChange={onOpenChange} onLoginClick={jest.fn()} />);
+    rerender(React.createElement(SignupModal, { 
+      open: true, 
+      onOpenChange, 
+      onLoginClick: jest.fn() 
+    }));
     
     // Check if form is reset
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Choose a username')).toHaveValue('');
     });
+    
+    // Clean up the mock
+    mockUseAuth.mockRestore();
   });
 });

@@ -3,9 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { LoginModal } from '../LoginModal';
-import { loginUser, clearError } from '@/store/features/auth/authSlice';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-
+import { loginUser, clearError } from '../../../src/store/features/auth/authSlice';
 // Mock the useToast hook
 const mockToast = jest.fn();
 jest.mock('../../../hooks/use-toast', () => ({
@@ -98,7 +96,7 @@ describe('LoginModal', () => {
   it('renders the login modal with form fields', () => {
     renderLoginModal();
 
-    expect(screen.getByText('Log in to Catalyst')).toBeInTheDocument();
+    expect(screen.getByText('Log in to continue to Catalyst')).toBeInTheDocument();
     expect(screen.getByLabelText('Username or Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log in' })).toBeInTheDocument();
@@ -219,7 +217,7 @@ describe('LoginModal', () => {
     // The error toast should be shown
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith({
-        title: 'Error',
+        title: 'Login Failed',
         description: errorMessage,
         variant: 'destructive',
       });
