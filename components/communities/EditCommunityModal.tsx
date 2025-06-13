@@ -275,6 +275,7 @@ export function EditCommunityModal({ open, onOpenChange, community, onSuccess }:
                   }}
                   className="hidden"
                   id="icon-upload"
+                  data-testid="community-icon-upload"
                 />
                 <Label
                   htmlFor="icon-upload"
