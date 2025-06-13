@@ -6,14 +6,13 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { ImagePlus, X, ChevronLeft, ChevronRight, Check, Pencil, Plus, Search } from 'lucide-react';
-import { httpClient } from '../../src/lib/api/httpClient';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import { Topic } from '@/types/topic.types';
 import { topicService } from '@/services/topic.service';
 import { communityService } from '../../src/services/communityService';
 
-interface CommunityData {
+export interface CommunityData {
   id?: string;
   name: string;
   description: string;
