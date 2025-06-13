@@ -320,7 +320,7 @@ export const PostList = ({ initialPosts, showJoinedCommunities = false, popular 
       {loading && page === 1 ? (
         <Card className="p-4">
           <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin" data-testid="loading-spinner" />
           </div>
         </Card>
       ) : error ? (

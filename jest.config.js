@@ -31,6 +31,29 @@ const customJestConfig = {
     '/node_modules/(?!(@babel/runtime|@babel/.*|@hookform|react-hook-form|@radix-ui|@tiptap|@tiptap/.*|@tiptap-extension-.*|@tiptap-.*|@tiptap/starter-kit|@tiptap/pm/.*|@tiptap/extension-.*|@tiptap/core|@tiptap/.*|@tiptap-extension-.*|@tiptap-.*|@tiptap/starter-kit|@tiptap/pm/.*|@tiptap/extension-.*|@tiptap/core|@tiptap/.*)/)',
   ],
   moduleDirectories: ['node_modules', '<rootDir>/'],
+  collectCoverage: true,
+  collectCoverageFrom: [
+    'components/**/*.{js,jsx,ts,tsx}',
+    'app/**/*.{js,jsx,ts,tsx}',
+    '!components/**/*.d.ts',
+    '!components/**/*.stories.{js,jsx,ts,tsx}',
+    '!app/**/*.d.ts',
+    '!app/**/*.stories.{js,jsx,ts,tsx}',
+    '!app/layout.tsx',
+    '!app/globals.css',
+    '!**/node_modules/**',
+    '!**/.next/**',
+  ],
+  coverageDirectory: '<rootDir>/coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover', 'text-summary'],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
   globals: {
     'ts-jest': {
       tsconfig: 'tsconfig.jest.json',

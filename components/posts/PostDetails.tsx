@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { cn } from '../../lib/utils';
 import { postService } from '../../src/services/postService';
 import { voteService } from '../../src/services/voteService';
@@ -68,6 +68,9 @@ export function PostDetails({ post }: PostDetailsProps) {
       console.log('Already voting, ignoring request');
       return;
     }
+    
+    // Set isVoting to true at the start of the voting process
+    setIsVoting(true);
 
     try {
       setIsVoting(true);
@@ -120,12 +123,14 @@ export function PostDetails({ post }: PostDetailsProps) {
               userVote === 'upvote' && "text-orange-500 dark:text-orange-400"
             )}
             onClick={() => {
-              console.log('Upvote button clicked - PostDetails'); // Debug log
-              console.log('Post ID:', post.id); // Debug log
-              console.log('User:', user); // Debug log
+              console.log('Upvote button clicked - PostDetails');
+              console.log('Post ID:', post.id);
+              console.log('User:', user);
               handleVote('upvote');
             }}
             disabled={isVoting}
+            aria-disabled={isVoting}
+            data-testid="upvote-button"
           >
             <ArrowBigUp className="h-5 w-5" />
             <span className="sr-only">Upvote</span>
@@ -147,12 +152,14 @@ export function PostDetails({ post }: PostDetailsProps) {
               userVote === 'downvote' && "text-blue-500 dark:text-blue-400"
             )}
             onClick={() => {
-              console.log('Downvote button clicked - PostDetails'); // Debug log
-              console.log('Post ID:', post.id); // Debug log
-              console.log('User:', user); // Debug log
+              console.log('Downvote button clicked - PostDetails');
+              console.log('Post ID:', post.id);
+              console.log('User:', user);
               handleVote('downvote');
             }}
             disabled={isVoting}
+            aria-disabled={isVoting}
+            data-testid="downvote-button"
           >
             <ArrowBigDown className="h-5 w-5" />
             <span className="sr-only">Downvote</span>
@@ -247,6 +254,7 @@ export function PostDetails({ post }: PostDetailsProps) {
               size="sm" 
               className={cn("gap-2", saved && "text-yellow-500")}
               onClick={() => setSaved(!saved)}
+              data-testid="save-button"
             >
               <BookmarkPlus className="h-4 w-4" />
               {saved ? "Saved" : "Save"}
@@ -254,7 +262,7 @@ export function PostDetails({ post }: PostDetailsProps) {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2" data-testid="dropdown-trigger">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

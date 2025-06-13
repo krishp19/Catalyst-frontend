@@ -22,8 +22,8 @@ export const CreatePostBox = () => {
       return;
     }
     
-    // Use window.location for immediate navigation
-    window.location.href = '/create-post';
+    // Use router for navigation
+    router.push('/create-post');
   };
   
   const handleContainerClick = () => {
@@ -32,8 +32,8 @@ export const CreatePostBox = () => {
       return;
     }
     
-    // Use window.location for immediate navigation
-    window.location.href = '/create-post';
+    // Use router for navigation
+    router.push('/create-post');
   };
   
   return (
