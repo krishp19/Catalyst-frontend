@@ -47,8 +47,11 @@ jest.mock('../../common/HtmlContent', () => {
 });
 
 // Mock date-fns
+// Mock date-fns to return a fixed date
+const mockFormatDistanceToNow = jest.fn(() => '5 days ago');
+
 jest.mock('date-fns', () => ({
-  formatDistanceToNow: jest.fn(() => '2 days ago'),
+  formatDistanceToNow: () => mockFormatDistanceToNow(),
 }));
 
 // Mock useAuth
@@ -126,7 +129,7 @@ describe('PostDetails', () => {
     expect(screen.getByText('u/testuser')).toBeInTheDocument();
 
     // Check timestamp
-    expect(screen.getByText('2 days ago')).toBeInTheDocument();
+    expect(screen.getByText('5 days ago')).toBeInTheDocument();
 
     // Check content
     expect(screen.getByTestId('html-content')).toHaveTextContent('Test content');

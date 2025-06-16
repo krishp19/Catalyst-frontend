@@ -4,6 +4,49 @@ import { advanceTo, clear } from 'jest-date-mock';
 import { PostCard } from '../PostCard';
 import { PostWithVote } from '../../../src/types/post.types';
 
+// Mock @radix-ui/react-dropdown-menu
+jest.mock('@radix-ui/react-dropdown-menu', () => ({
+  Root: ({ children, ...props }: any) => <div data-testid="dropdown-root" {...props}>{children}</div>,
+  Trigger: ({ children, ...props }: any) => <button data-testid="dropdown-trigger" {...props}>{children}</button>,
+  Portal: ({ children }: any) => <div data-testid="dropdown-portal">{children}</div>,
+  Content: ({ children, ...props }: any) => <div data-testid="dropdown-content" {...props}>{children}</div>,
+  Item: ({ children, ...props }: any) => <div data-testid="dropdown-item" {...props}>{children}</div>,
+  CheckboxItem: Object.assign(
+    ({ children, ...props }: any) => <div data-testid="dropdown-checkbox-item" {...props}>{children}</div>,
+    { displayName: 'DropdownMenuCheckboxItem' }
+  ),
+  RadioItem: Object.assign(
+    ({ children, ...props }: any) => <div data-testid="dropdown-radio-item" {...props}>{children}</div>,
+    { displayName: 'DropdownMenuRadioItem' }
+  ),
+  Label: ({ children, ...props }: any) => <div data-testid="dropdown-label" {...props}>{children}</div>,
+  Separator: (props: any) => <div data-testid="dropdown-separator" {...props} />,
+  Shortcut: ({ children, ...props }: any) => <span data-testid="dropdown-shortcut" {...props}>{children}</span>,
+  Group: ({ children, ...props }: any) => <div data-testid="dropdown-group" {...props}>{children}</div>,
+  Sub: ({ children, ...props }: any) => <div data-testid="dropdown-sub" {...props}>{children}</div>,
+  SubTrigger: Object.assign(
+    ({ children, ...props }: any) => <div data-testid="dropdown-sub-trigger" {...props}>{children}</div>,
+    { displayName: 'DropdownMenuPrimitive.SubTrigger' }
+  ),
+  SubContent: Object.assign(
+    ({ children, ...props }: any) => <div data-testid="dropdown-sub-content" {...props}>{children}</div>,
+    { displayName: 'DropdownMenuPrimitive.SubContent' }
+  ),
+  RadioGroup: ({ children, ...props }: any) => <div data-testid="dropdown-radio-group" {...props}>{children}</div>,
+  ItemIndicator: ({ children, ...props }: any) => <div data-testid="dropdown-item-indicator" {...props}>{children}</div>,
+  // Add display names for primitive components
+  DropdownMenuCheckboxItem: { displayName: 'DropdownMenuCheckboxItem' },
+  DropdownMenuRadioItem: { displayName: 'DropdownMenuRadioItem' },
+  DropdownMenuLabel: { displayName: 'DropdownMenuLabel' },
+  DropdownMenuSeparator: { displayName: 'DropdownMenuSeparator' },
+  DropdownMenuShortcut: { displayName: 'DropdownMenuShortcut' },
+  DropdownMenuSub: { displayName: 'DropdownMenuSub' },
+  DropdownMenuSubTrigger: { displayName: 'DropdownMenuSubTrigger' },
+  DropdownMenuSubContent: { displayName: 'DropdownMenuSubContent' },
+  DropdownMenuRadioGroup: { displayName: 'DropdownMenuRadioGroup' },
+  DropdownMenuItemIndicator: { displayName: 'DropdownMenuItemIndicator' },
+}));
+
 // Mock dependencies
 jest.mock('next/image', () => ({
   __esModule: true,
@@ -280,9 +323,14 @@ describe('PostCard', () => {
   test('renders dropdown menu items and handles clicks', async () => {
     render(<PostCard post={mockPost} />);
     
-    const moreButton = screen.getByRole('button', { name: '' });
+    // Find the more button by its test ID from our mock
+    const moreButton = screen.getByTestId('dropdown-trigger');
     await userEvent.click(moreButton);
     
+    // The dropdown content should be visible now
+    expect(screen.getByTestId('dropdown-content')).toBeInTheDocument();
+    
+    // Check for dropdown items
     expect(screen.getByText('Hide')).toBeInTheDocument();
     expect(screen.getByText('Report')).toBeInTheDocument();
     expect(screen.getByText('Copy link')).toBeInTheDocument();

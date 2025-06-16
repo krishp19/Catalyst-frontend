@@ -8,6 +8,41 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import * as CommentFormModule from '../CommentForm';
 
+// Mock @radix-ui/react-dropdown-menu
+jest.mock('@radix-ui/react-dropdown-menu', () => {
+  const MockComponent = ({ children, ...props }: any) => <div {...props}>{children}</div>;
+  
+  return {
+    Root: MockComponent,
+    Trigger: MockComponent,
+    Portal: MockComponent,
+    Content: MockComponent,
+    Item: MockComponent,
+    CheckboxItem: Object.assign(MockComponent, { displayName: 'DropdownMenuCheckboxItem' }),
+    RadioItem: Object.assign(MockComponent, { displayName: 'DropdownMenuRadioItem' }),
+    Label: MockComponent,
+    Separator: MockComponent,
+    Shortcut: MockComponent,
+    Group: MockComponent,
+    Sub: MockComponent,
+    SubTrigger: MockComponent,
+    SubContent: MockComponent,
+    RadioGroup: MockComponent,
+    ItemIndicator: MockComponent,
+    // Add display names for components that might be accessed via displayName
+    DropdownMenuCheckboxItem: { displayName: 'DropdownMenuCheckboxItem' },
+    DropdownMenuRadioItem: { displayName: 'DropdownMenuRadioItem' },
+    DropdownMenuLabel: { displayName: 'DropdownMenuLabel' },
+    DropdownMenuSeparator: { displayName: 'DropdownMenuSeparator' },
+    DropdownMenuShortcut: { displayName: 'DropdownMenuShortcut' },
+    DropdownMenuSub: { displayName: 'DropdownMenuSub' },
+    DropdownMenuSubTrigger: { displayName: 'DropdownMenuSubTrigger' },
+    DropdownMenuSubContent: { displayName: 'DropdownMenuSubContent' },
+    DropdownMenuRadioGroup: { displayName: 'DropdownMenuRadioGroup' },
+    DropdownMenuItemIndicator: { displayName: 'DropdownMenuItemIndicator' },
+  };
+});
+
 // Mock dependencies
 jest.mock('../../../src/services/commentService');
 jest.mock('../../../src/hooks/useAuth');
