@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -47,6 +47,9 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>(community?.topics || []);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
+  const topicSearchRef = useRef<HTMLInputElement>(null);
+  const topicDropdownRef = useRef<HTMLDivElement>(null);
+  const debounceTimeout = useRef<NodeJS.Timeout>();
   
   // Reset form when community prop changes
   useEffect(() => {
@@ -66,41 +69,80 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
   }, [community]);
   const { theme } = useTheme();
 
-  // Search for topics
-  useEffect(() => {
-    if (!searchQuery.trim()) {
+  // Debounce function
+  const debounce = useCallback((func: Function, delay: number) => {
+    return (...args: any[]) => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+      debounceTimeout.current = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+  // Memoized topic search function
+  const searchTopics = useCallback(async (query: string) => {
+    if (!query.trim()) {
       setAvailableTopics([]);
       return;
     }
 
-    const searchTopics = async () => {
-      if (searchQuery.length < 2) {
-        setAvailableTopics([]);
-        return;
-      }
+    if (query.length < 2) {
+      setAvailableTopics([]);
+      return;
+    }
 
-      try {
-        setIsLoadingTopics(true);
-        const { topics } = await topicService.getTopics(searchQuery, 1, 10);
-        const filteredTopics = topics
-          .filter((topic: Topic) => !selectedTopics.some(t => t.id === topic.id))
-          .slice(0, 5);
-        setAvailableTopics(filteredTopics);
-      } catch (error) {
-        console.error('Error searching topics:', error);
-        toast.error('Failed to search for topics');
-        setAvailableTopics([]);
-      } finally {
-        setIsLoadingTopics(false);
+    try {
+      setIsLoadingTopics(true);
+      const { topics } = await topicService.getTopics(query, 1, 10);
+      const filteredTopics = topics
+        .filter((topic: Topic) => !selectedTopics.some(t => t.id === topic.id))
+        .slice(0, 10);
+      setAvailableTopics(filteredTopics);
+    } catch (error) {
+      console.error('Error searching topics:', error);
+      toast.error('Failed to search for topics');
+      setAvailableTopics([]);
+    } finally {
+      setIsLoadingTopics(false);
+    }
+  }, [selectedTopics]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      searchTopics(query);
+    }, 500),
+    [searchTopics]
+  );
+
+  // Handle topic search input change
+  const handleTopicSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    debouncedSearch(query);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (topicDropdownRef.current && !topicDropdownRef.current.contains(event.target as Node) &&
+          topicSearchRef.current && !topicSearchRef.current.contains(event.target as Node)) {
+        setSearchQuery('');
       }
     };
 
-    const debounceTimer = setTimeout(() => {
-      searchTopics();
-    }, 300);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery, selectedTopics]);
+  // Clear debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
 
   const handleTopicSelect = (topic: Topic) => {
     if (!selectedTopics.some(t => t.id === topic.id)) {
@@ -316,72 +358,98 @@ export function CreateCommunityModal({ open, onOpenChange, community, onSuccess 
         </p>
       </div>
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Search topics..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {selectedTopics.length > 0 && (
-          <div className="space-y-2">
-            <Label>Selected Topics</Label>
-            <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Topics</Label>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {selectedTopics.length}/10 topics
+            </span>
+          </div>
+          
+          {/* Selected Topics */}
+          {selectedTopics.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
               {selectedTopics.map((topic) => (
                 <div
                   key={topic.id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary"
+                  className="inline-flex items-center bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-colors duration-200"
                 >
-                  {topic.name}
+                  <span className="font-medium">{topic.name}</span>
                   <button
                     type="button"
                     onClick={() => removeTopic(topic.id)}
-                    className="ml-2 text-primary/70 hover:text-primary"
+                    className="ml-1.5 text-primary/60 hover:text-primary/100 focus:outline-none transition-colors duration-200 flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary/20"
+                    aria-label={`Remove topic ${topic.name}`}
                   >
-                    <X size={14} />
+                    &times;
                   </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        <div className="space-y-2">
-          <Label>Available Topics</Label>
-          <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
-            {isLoadingTopics ? (
-              <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
-            ) : availableTopics.length > 0 ? (
-              availableTopics.map((topic) => (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={() => handleTopicSelect(topic)}
-                  className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{topic.name}</p>
-                      {topic.description && (
-                        <p className="text-sm text-gray-500">{topic.description}</p>
-                      )}
-                    </div>
-                    <Plus className="h-4 w-4 text-gray-400" />
+          )}
+
+          {/* Topic Search */}
+          <div className="relative" ref={topicDropdownRef}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder={selectedTopics.length >= 10 ? 'Maximum 10 topics reached' : 'Search and add topics...'}
+                value={searchQuery}
+                onChange={handleTopicSearchChange}
+                onFocus={() => searchQuery.trim() && setSearchQuery(searchQuery)}
+                className={`pl-10 ${selectedTopics.length >= 10 ? 'opacity-70 cursor-not-allowed' : ''}`}
+                ref={topicSearchRef}
+                disabled={selectedTopics.length >= 10}
+              />
+              {isLoadingTopics && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            {/* Topic Suggestions */}
+            {searchQuery.trim() && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg p-2">
+                {availableTopics.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {availableTopics.map((topic) => (
+                      <div
+                        key={topic.id}
+                        className={`px-3 py-1.5 rounded-full text-sm cursor-pointer flex items-center gap-1.5 ${
+                          selectedTopics.some(t => t.id === topic.id)
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-primary/10 hover:text-primary dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                        }`}
+                        onClick={() => handleTopicSelect(topic)}
+                      >
+                        <span className="font-medium">{topic.name}</span>
+                        {selectedTopics.some(t => t.id === topic.id) && (
+                          <span className="text-xs text-green-500">✓</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </button>
-              ))
-            ) : searchQuery ? (
-              <div className="p-4 text-center text-sm text-gray-500">
-                No topics found. Try a different search term.
-              </div>
-            ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
-                Search for topics to add to your community.
+                ) : searchQuery.trim() && !isLoadingTopics ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                    No topics found. Try a different search term.
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {selectedTopics.length >= 10 ? (
+              'Maximum of 10 topics reached. Remove topics to add more.'
+            ) : (
+              `Add up to ${10 - selectedTopics.length} more topics to help people find your community.`
+            )}
+          </p>
         </div>
       </div>
     </div>

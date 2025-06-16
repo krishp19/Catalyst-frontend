@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { postService, PostType, type CreatePostDto } from '../../src/services/postService';
@@ -54,8 +54,66 @@ export default function CreatePostPage() {
   const [tagSearch, setTagSearch] = useState('');
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const tagSearchRef = useRef<HTMLInputElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const debounceTimeout = useRef<NodeJS.Timeout>();
+
+  // Debounce function
+  const debounce = useCallback((func: Function, delay: number) => {
+    return (...args: any[]) => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+      debounceTimeout.current = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+  // Memoized tag search function
+  const searchTags = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setAvailableTags([]);
+      setShowTagDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await tagService.getTags(query);
+      setAvailableTags(results);
+      setShowTagDropdown(true);
+    } catch (error) {
+      console.error('Error searching tags:', error);
+      setAvailableTags([]);
+      toast.error('Failed to search tags');
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      searchTags(query);
+    }, 500),
+    []
+  );
+
+  // Handle tag search input change
+  const handleTagSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setTagSearch(query);
+    debouncedSearch(query);
+  };
+
+  // Clear debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCommunities = async () => {
@@ -192,28 +250,6 @@ export default function CreatePostPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Search for tags when input changes
-  useEffect(() => {
-    const searchTags = async () => {
-      if (tagSearch.trim().length > 0) {
-        try {
-          const results = await tagService.getTags(tagSearch);
-          setAvailableTags(results);
-          setShowTagDropdown(true);
-        } catch (error) {
-          console.error('Error searching tags:', error);
-          setAvailableTags([]);
-        }
-      } else {
-        setAvailableTags([]);
-        setShowTagDropdown(false);
-      }
-    };
-
-    const timer = setTimeout(searchTags, 300);
-    return () => clearTimeout(timer);
-  }, [tagSearch]);
 
   if (loading) {
     return (
@@ -367,56 +403,101 @@ export default function CreatePostPage() {
 
                 {/* Tags Input */}
                 <div className="mt-6 space-y-2 relative" ref={tagDropdownRef}>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tags {formData.tags.length > 0 && `(${formData.tags.length}/5)`}
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Tags
+                    </label>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formData.tags.length}/5 tags
+                    </span>
+                  </div>
                   <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Add tags (max 5)"
-                      value={tagSearch}
-                      onChange={(e) => setTagSearch(e.target.value)}
-                      onFocus={() => tagSearch.trim() && setShowTagDropdown(true)}
-                      className="border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200"
-                      ref={tagSearchRef}
-                      disabled={formData.tags.length >= 5}
-                    />
-                    {showTagDropdown && availableTags.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {availableTags.map((tag) => (
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder={formData.tags.length >= 5 ? 'Maximum 5 tags reached' : 'Search and add tags...'}
+                        value={tagSearch}
+                        onChange={handleTagSearchChange}
+                        onFocus={() => tagSearch.trim() && setShowTagDropdown(true)}
+                        className={`border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200 pr-10 ${
+                          formData.tags.length >= 5 ? 'opacity-70 cursor-not-allowed' : ''
+                        }`}
+                        ref={tagSearchRef}
+                        disabled={formData.tags.length >= 5}
+                      />
+                      {isSearching && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                        </div>
+                      )}
+                    </div>
+                    {showTagDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg p-2">
+                        {availableTags.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {availableTags.map((tag) => (
+                              <div
+                                key={tag.id}
+                                className={`px-3 py-1.5 rounded-full text-sm cursor-pointer flex items-center gap-1.5 ${
+                                  formData.tags.includes(tag.name)
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                                }`}
+                                onClick={() => handleTagSelect(tag.name)}
+                              >
+                                <span className="font-medium">#{tag.name}</span>
+                                {formData.tags.includes(tag.name) && (
+                                  <span className="text-xs text-green-500">✓</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : tagSearch.trim() ? (
+                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            No tags found. Press Enter to create "{tagSearch}"
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    {formData.tags.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                        {formData.tags.map((tag) => (
                           <div
-                            key={tag.id}
-                            className="px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-900 dark:text-gray-100"
-                            onClick={() => handleTagSelect(tag.name)}
+                            key={tag}
+                            className="flex-shrink-0 inline-flex items-center bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-xs px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800 transition-colors duration-200 hover:bg-orange-200 dark:hover:bg-orange-800/40"
                           >
-                            {tag.name}
+                            <span className="text-orange-500">#</span>
+                            <span className="font-medium max-w-[120px] truncate" title={tag}>
+                              {tag}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeTag(tag);
+                              }}
+                              className="ml-1.5 text-orange-400 hover:text-orange-600 dark:hover:text-orange-100 focus:outline-none transition-colors duration-200 flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-500/20 flex-shrink-0"
+                              aria-label={`Remove tag ${tag}`}
+                            >
+                              &times;
+                            </button>
                           </div>
                         ))}
                       </div>
                     )}
-                  </div>
-                  {formData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.tags.map((tag) => (
-                        <div
-                          key={tag}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200"
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-orange-200 dark:bg-orange-800/50 hover:bg-orange-300 dark:hover:bg-orange-700/70"
-                          >
-                            <span className="sr-only">Remove tag</span>
-                            <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
-                              <path strokeLinecap="round" strokeWidth="1.5" d="M1 1l6 6m0-6L1 7" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {formData.tags.length >= 5 ? (
+                          'Maximum of 5 tags reached. Remove tags to add more.'
+                        ) : (
+                          `Add up to ${5 - formData.tags.length} more tags`
+                        )}
+                      </p>
                     </div>
-                  )}
+                  </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Add up to 5 tags to help others find your post
                   </p>
