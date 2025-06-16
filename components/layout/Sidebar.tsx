@@ -94,10 +94,10 @@ const Sidebar = () => {
       return (
         <div className="space-y-2 px-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
+            <div key={i} className="flex items-center gap-3" data-testid="community-skeleton">
+              <Skeleton className="h-8 w-8 rounded-full" data-testid="skeleton-avatar" />
               <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" data-testid="skeleton-name" />
                 <Skeleton className="h-3 w-16" />
               </div>
             </div>

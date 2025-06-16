@@ -3,7 +3,7 @@ import * as React from 'react';
 // Create a component factory that handles both the component and its displayName
 const createComponent = (displayName: string) => {
   const Component = React.forwardRef(({ children, ...props }: any, ref: any) => (
-    <div ref={ref} {...props}>
+    <div ref={ref} {...props} data-testid={displayName.toLowerCase()}>
       {children}
     </div>
   ));
@@ -47,13 +47,6 @@ const DropdownMenuPrimitive = {
   SubContent: DropdownMenuSubContent,
   RadioGroup: DropdownMenuRadioGroup,
   ItemIndicator: DropdownMenuItemIndicator,
-  // Add primitive components with displayName properties
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
