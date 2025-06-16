@@ -44,20 +44,13 @@ interface PostDetailsProps {
 
 export function PostDetails({ post }: PostDetailsProps) {
   const { user, setIsLoginModalOpen } = useAuth();
-  console.log('PostDetails - Auth State:', { 
-    isAuthenticated: !!user,
-    userId: user?.id,
-    username: user?.username
-  });
   const [votes, setVotes] = useState(post.score);
   const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(null);
   const [isVoting, setIsVoting] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleVote = async (type: 'upvote' | 'downvote') => {
-    console.log('handleVote called with type:', type);
-    console.log('Current user:', user);
-    
+
     if (!user) {
       console.log('No user found, opening login modal');
       setIsLoginModalOpen(true);
@@ -123,9 +116,6 @@ export function PostDetails({ post }: PostDetailsProps) {
               userVote === 'upvote' && "text-orange-500 dark:text-orange-400"
             )}
             onClick={() => {
-              console.log('Upvote button clicked - PostDetails');
-              console.log('Post ID:', post.id);
-              console.log('User:', user);
               handleVote('upvote');
             }}
             disabled={isVoting}
@@ -152,9 +142,6 @@ export function PostDetails({ post }: PostDetailsProps) {
               userVote === 'downvote' && "text-blue-500 dark:text-blue-400"
             )}
             onClick={() => {
-              console.log('Downvote button clicked - PostDetails');
-              console.log('Post ID:', post.id);
-              console.log('User:', user);
               handleVote('downvote');
             }}
             disabled={isVoting}

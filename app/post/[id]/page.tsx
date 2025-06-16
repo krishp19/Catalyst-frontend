@@ -48,32 +48,80 @@ export default function PostPage() {
     }
   }, [params.id]);
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+  // Skeleton loader component
+  const PostSkeleton = () => (
+    <div className="space-y-6">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+        
+        {/* Post content skeleton */}
+        <div className="space-y-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex gap-4 mt-6">
+          <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+        
+        {/* Comments section skeleton */}
+        <div className="mt-12 space-y-6">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
+          
+          {/* Comment input */}
+          <div className="h-24 bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-3"></div>
+            <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+          
+          {/* Comment list */}
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+  
+  // Community sidebar skeleton
+  const CommunitySkeleton = () => (
+    <Card className="border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+      <div className="h-24 bg-gray-200 dark:bg-gray-700"></div>
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 -mt-8 border-4 border-white dark:border-gray-800"></div>
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+          </div>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    </Card>
+  );
 
-  if (error || !post) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500 dark:text-red-400 mb-4">{error || 'Post not found'}</h1>
-          <Link href="/">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -81,26 +129,44 @@ export default function PostPage() {
       <main className="flex-1 px-4 py-8">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <Link href={`/r/${post.community.name}`}>
-              <Button variant="ghost" className="mb-4 gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Community
-              </Button>
-            </Link>
-            <PostDetails post={post} />
-            <div className="mt-8">
-              <CommentSection postId={post.id} />
-            </div>
+            {loading ? (
+              <PostSkeleton />
+            ) : error || !post ? (
+              <div className="text-center py-12">
+                <h1 className="text-2xl font-bold text-red-500 dark:text-red-400 mb-4">
+                  {error || 'Post not found'}
+                </h1>
+                <Link href="/">
+                  <Button variant="outline" className="gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Home
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link href={`/r/${post.community.name}`}>
+                  <Button variant="ghost" className="mb-4 gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Community
+                  </Button>
+                </Link>
+                <PostDetails post={post} />
+                <div className="mt-8">
+                  <CommentSection postId={post.id} />
+                </div>
+              </>
+            )}
           </div>
           
-          {community && (
-            <div className="lg:col-span-1">
+          {/* Right sidebar */}
+          <div className="lg:col-span-1">
+            {loading ? (
+              <CommunitySkeleton />
+            ) : community ? (
               <Card className="border border-orange-100 dark:border-orange-900/30 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-                {/* Community Banner */}
                 {community.bannerUrl && (
                   <div className="h-24 w-full">
-                    {/* Using img instead of Next.js Image due to dynamic src and TypeScript errors */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={community.bannerUrl} 
                       alt={`${community.name} banner`}
@@ -110,12 +176,9 @@ export default function PostPage() {
                 )}
                 
                 <div className="p-4">
-                  {/* Community Header */}
                   <div className="flex items-center gap-3 mb-6">
                     <div className="h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center -mt-8 border-4 border-white dark:border-gray-800">
                       {community.iconUrl ? (
-                        // Using img instead of Next.js Image due to dynamic src and TypeScript errors
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img 
                           src={community.iconUrl} 
                           alt={community.name}
@@ -137,7 +200,6 @@ export default function PostPage() {
                     </div>
                   </div>
                   
-                  {/* Community Description */}
                   <div className="space-y-4">
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                       {community.description}
@@ -160,8 +222,8 @@ export default function PostPage() {
                   </div>
                 </div>
               </Card>
-            </div>
-          )}
+            ) : null}
+          </div>
         </div>
       </main>
     </div>
