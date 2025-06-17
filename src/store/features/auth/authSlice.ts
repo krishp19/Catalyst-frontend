@@ -19,6 +19,7 @@ interface LoginResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  message?: string;
 }
 
 interface AuthState {
@@ -50,7 +51,16 @@ export const loginUser = createAsyncThunk<LoginResponse, LoginData, { rejectValu
       if (!response.data) {
         return rejectWithValue('No data received from server');
       }
-      return response.data;
+      // Ensure all required fields are present
+      if (!response.data.accessToken || !response.data.refreshToken || !response.data.user) {
+        return rejectWithValue('Incomplete authentication data received');
+      }
+      return {
+        user: response.data.user,
+        accessToken: response.data.accessToken,
+        refreshToken: response.data.refreshToken,
+        message: response.data.message
+      };
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.response) {
@@ -106,9 +116,14 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
+        state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
         state.error = action.payload || 'Login failed';
       });
   },

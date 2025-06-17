@@ -141,19 +141,23 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     mode: 'onChange',
   });
   
-  const { fields } = useFieldArray({
-    control: otpForm.control,
-    name: 'otp',
-    keyName: 'key' // Add keyName to fix the missing key error
-  });
-  
-  // Initialize OTP fields when component mounts
+  // Initialize OTP fields when component mounts or when step changes
   useEffect(() => {
     if (currentStep === 2) {
+      // Reset form with 6 empty strings for OTP
       otpForm.reset({ otp: Array(6).fill('') });
+      // Focus the first input when OTP step is shown
+      setTimeout(() => {
+        if (otpInputsRef.current[0]) {
+          otpInputsRef.current[0]?.focus();
+        }
+      }, 100);
     }
   }, [currentStep, otpForm]);
-
+  
+  // Watch the OTP values
+  const otpValues = otpForm.watch('otp');
+  
   const password = signupForm.watch('password');
   
   const handleOtpChange = (value: string, index: number) => {
@@ -526,13 +530,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     {Array.from({ length: 6 }).map((_, index) => (
                       <div key={index} className="w-12 h-12">
                         <input
-                          ref={(el) => (otpInputsRef.current[index] = el)}
+                          ref={(el) => {
+                            if (el) {
+                              otpInputsRef.current[index] = el;
+                            }
+                          }}
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
                           maxLength={1}
                           className="w-full h-full text-center text-xl font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          value={otpForm.watch(`otp.${index}`) || ''}
+                          value={otpValues?.[index] || ''}
                           onChange={(e) => handleOtpChange(e.target.value, index)}
                           onKeyDown={(e) => handleOtpKeyDown(e, index)}
                           onPaste={handlePaste}
