@@ -33,10 +33,20 @@ export interface ApiResponse<T = any> {
   };
 }
 
+export interface ResendOtpData {
+  email: string;
+}
+
+export interface VerifyOtpData {
+  email: string;
+  otp: string;
+}
+
 export interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
+  message?: string;
 }
 
 export interface UpdateProfileData {
@@ -49,12 +59,41 @@ export const authService = {
   async signup(data: SignupData): Promise<ApiResponse<AuthResponse>> {
     try {
       const response = await httpClient.post<AuthResponse>('/auth/register', data);
-      return { data: response.data };
+      return { 
+        data: {
+          user: response.data.user,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          message: response.data.message
+        } 
+      };
     } catch (error: any) {
       console.error('Signup error:', error);
       return {
         error: {
-          message: error.message || 'Failed to sign up',
+          message: error.response?.data?.message || error.message || 'Failed to sign up',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async verifyOtp(data: VerifyOtpData): Promise<ApiResponse<AuthResponse>> {
+    try {
+      const response = await httpClient.post<AuthResponse>('/auth/verify-otp', data);
+      return { 
+        data: {
+          user: response.data.user,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          message: response.data.message
+        }
+      };
+    } catch (error: any) {
+      console.error('Verify OTP error:', error);
+      return {
+        error: {
+          message: error.response?.data?.message || error.message || 'Failed to verify OTP',
           status: error.response?.status,
         },
       };

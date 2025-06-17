@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FieldValues, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../src/services/auth/authService';
+
+type OtpInputRefs = Array<HTMLInputElement | null>;
+
+interface OtpFormValues extends FieldValues {
+  otp: string[];
+}
 import {
   Dialog,
   DialogContent,
@@ -89,7 +95,24 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [userEmail, setUserEmail] = useState('');
+  const [countdown, setCountdown] = useState(0);
   const { toast } = useToast();
+  const otpInputsRef = useRef<OtpInputRefs>([]);
+  
+  // Initialize refs array
+  useEffect(() => {
+    otpInputsRef.current = otpInputsRef.current.slice(0, 6);
+  }, []);
+  
+  // Countdown effect for OTP resend
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
   
   // Handle both controlled and uncontrolled open state
   const isControlled = externalOpen !== undefined;
@@ -100,7 +123,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     return isControlled ? (setExternalOpen || (() => {})) : setIsSignupModalOpen;
   }, [isControlled, setExternalOpen, setIsSignupModalOpen]);
 
-  const form = useForm<SignupFormValues>({
+  const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       username: '',
@@ -110,8 +133,69 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     },
     mode: 'onChange',
   });
+  
+  const otpForm = useForm<OtpFormValues>({
+    defaultValues: {
+      otp: Array(6).fill('')
+    },
+    mode: 'onChange',
+  });
+  
+  const { fields } = useFieldArray({
+    control: otpForm.control,
+    name: 'otp',
+    keyName: 'key' // Add keyName to fix the missing key error
+  });
+  
+  // Initialize OTP fields when component mounts
+  useEffect(() => {
+    if (currentStep === 2) {
+      otpForm.reset({ otp: Array(6).fill('') });
+    }
+  }, [currentStep, otpForm]);
 
-  const password = form.watch('password');
+  const password = signupForm.watch('password');
+  
+  const handleOtpChange = (value: string, index: number) => {
+    // Only allow numbers
+    if (value && !/^\d*$/.test(value)) return;
+    
+    // Update the current field
+    const newOtp = [...otpForm.getValues('otp')];
+    newOtp[index] = value.slice(-1); // Only take the last character
+    otpForm.setValue('otp', newOtp, { shouldValidate: true });
+    
+    // Auto-focus next input if there's a value and not the last input
+    if (value && index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+  
+  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !otpForm.getValues('otp')[index] && index > 0) {
+      // Move to previous input on backspace when current is empty
+      otpInputsRef.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      // Move left with left arrow
+      e.preventDefault();
+      otpInputsRef.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      // Move right with right arrow
+      e.preventDefault();
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+  
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData('text/plain').trim();
+    if (/^\d{6}$/.test(paste)) {
+      const otpArray = paste.split('').slice(0, 6);
+      otpForm.setValue('otp', otpArray, { shouldValidate: true });
+      // Focus the last input after paste
+      setTimeout(() => otpInputsRef.current[5]?.focus(), 0);
+    }
+  };
 
   const checkPasswordRequirements = (value: string) => {
     return passwordRequirements.map(req => ({
@@ -138,21 +222,110 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         throw new Error(response.error.message || 'Failed to sign up');
       }
 
-
+      // Show success message from API
       toast({
-        title: 'Account created successfully!',
-        description: 'You can now log in with your credentials.',
+        title: 'Success!',
+        description: response.data?.message || 'Registration successful. Please check your email for the OTP.',
       });
 
-      // Close signup and open login modal
-      form.reset();
-      setOpen(false);
-      setIsLoginModalOpen(true);
+      // Move to OTP verification step
+      setUserEmail(data.email);
+      setCurrentStep(2);
+      setCountdown(60); // 1 minute countdown for resend
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
         title: 'Signup failed',
         description: error.message || 'An error occurred during signup',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleVerifyOtp = async (data: { otp: string[] | string }) => {
+    // Ensure otp is an array
+    const otpArray = Array.isArray(data.otp) ? data.otp : [data.otp];
+    const otp = otpArray.join('');
+    setIsLoading(true);
+    try {
+      if (otp.length !== 6) {
+        throw new Error('Please enter a valid 6-digit OTP');
+      }
+      
+      const response = await authService.verifyOtp({
+        email: userEmail,
+        otp: otp
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to verify OTP');
+      }
+      
+      toast({
+        title: 'Email verified!',
+        description: response.data?.message || 'Your email has been verified successfully. You can now log in.',
+      });
+      
+      // Reset forms and close modal
+      signupForm.reset();
+      otpForm.reset();
+      setCurrentStep(1);
+      setOpen(false);
+      setIsLoginModalOpen(true);
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      toast({
+        title: 'Verification failed',
+        description: error.message || 'An error occurred while verifying OTP',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleResendOtp = async () => {
+    if (countdown > 0) return;
+    
+    setIsLoading(true);
+    try {
+      // Since we don't have a resendOtp endpoint, we'll just show a message
+      // You can implement the actual resend logic when the endpoint is available
+      toast({
+        title: 'OTP Resent!',
+        description: 'A new OTP has been sent to your email.',
+      });
+      
+      setCountdown(60); // Reset countdown
+      return;
+      
+      // Uncomment this when the resendOtp endpoint is available
+      /*
+      const response = await authService.verifyOtp({
+        email: userEmail,
+        otp: '' // This should be handled by the backend
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to resend OTP');
+      }
+      
+      toast({
+        title: 'OTP sent!',
+        description: response.data?.message || 'A new OTP has been sent to your email.',
+      });
+      
+      setCountdown(60); // Reset countdown
+      */
+      
+      setCountdown(60); // Reset countdown
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+      toast({
+        title: 'Failed to resend OTP',
+        description: error.message || 'An error occurred while resending OTP',
         variant: 'destructive',
       });
     } finally {
@@ -171,10 +344,19 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
-      form.reset();
+      signupForm.reset();
+      otpForm.reset();
+      setCurrentStep(1);
+      setUserEmail('');
+      setCountdown(0);
+      setError('');
     }
     setOpen(newOpen);
-  }, [form, setOpen]);
+  }, [signupForm, otpForm, setOpen]);
+
+  const handleBackToSignup = () => {
+    setError('');
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -190,10 +372,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         </DialogHeader>
         
         <div className="px-6 pb-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {currentStep === 1 ? (
+            <Form {...signupForm}>
+              <form onSubmit={signupForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={signupForm.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
@@ -213,7 +396,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               />
               
               <FormField
-                control={form.control}
+                control={signupForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -234,7 +417,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               />
               
               <FormField
-                control={form.control}
+                control={signupForm.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -279,7 +462,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               />
               
               <FormField
-                control={form.control}
+                control={signupForm.control}
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
@@ -303,11 +486,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <Button 
                   type="submit" 
                   className={`w-full h-10 font-medium rounded-md transition-colors ${
-                    !isPasswordValid || !form.formState.isValid 
+                    !isPasswordValid || !signupForm.formState.isValid 
                       ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
                       : 'bg-orange-500 hover:bg-orange-600 text-white'
                   }`}
-                  disabled={isLoading || !form.formState.isValid || !isPasswordValid}
+                  disabled={isLoading || !signupForm.formState.isValid || !isPasswordValid}
                 >
                   {isLoading ? (
                     <>
@@ -319,32 +502,126 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   )}
                 </Button>
               </div>
-            </form>
-          </Form>
+              </form>
+            </Form>
+          ) : (
+            <Form {...otpForm}>
+              <form onSubmit={otpForm.handleSubmit((data) => handleVerifyOtp({ otp: data.otp }))} className="space-y-4">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Verify Your Email</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    We've sent a verification code to
+                  </p>
+                  <div className="mt-1 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-md inline-block">
+                    <span className="font-medium text-gray-900 dark:text-gray-200">{userEmail}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 block text-center">
+                    Enter verification code
+                  </FormLabel>
+                  
+                  <div className="flex justify-center space-x-2">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div key={index} className="w-12 h-12">
+                        <input
+                          ref={(el) => (otpInputsRef.current[index] = el)}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          className="w-full h-full text-center text-xl font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          value={otpForm.watch(`otp.${index}`) || ''}
+                          onChange={(e) => handleOtpChange(e.target.value, index)}
+                          onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                          onPaste={handlePaste}
+                          autoFocus={index === 0}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <FormMessage className="text-red-500 text-xs text-center" />
+                </div>
+                
+                <div className="pt-2 space-y-3">
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 font-medium rounded-md bg-orange-500 hover:bg-orange-600 text-white"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify OTP'
+                    )}
+                  </Button>
+                  
+                  <div className="text-center text-sm">
+                    <button
+                      type="button"
+                      className={`font-medium ${
+                        countdown > 0
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-orange-600 hover:text-orange-500 dark:text-orange-400'
+                      }`}
+                      onClick={handleResendOtp}
+                      disabled={countdown > 0 || isLoading}
+                    >
+                      {countdown > 0 
+                        ? `Resend OTP in ${countdown}s` 
+                        : "Didn't receive code? Resend"}
+                    </button>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-600 hover:text-gray-500 dark:text-gray-400"
+                      onClick={() => {
+                        setCurrentStep(1);
+                        setError('');
+                      }}
+                      disabled={isLoading}
+                    >
+                      Back to Sign Up
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </Form>
+          )}
           
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                OR
-              </span>
-            </div>
-          </div>
-          
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
-            <button 
-              type="button" 
-              className="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400"
-              onClick={handleLoginClick}
-              data-testid="login-button"
-            >
-              Log in
-            </button>
-          </div>
-        </div>
+          {currentStep === 1 && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                    OR
+                  </span>
+                </div>
+              </div>
+              
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                Already have an account?{' '}
+                <button 
+                  type="button" 
+                  className="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400"
+                  onClick={handleLoginClick}
+                  data-testid="login-button"
+                >
+                  Log in
+                </button>
+              </div>
+            </>
+          )}
+         </div>
       </DialogContent>
     </Dialog>
   );

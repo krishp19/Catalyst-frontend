@@ -257,7 +257,7 @@ export default function CreatePostPage() {
         <Sidebar />
         <div className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
-            <div className="animate-pulse space-y-6">
+            <div data-testid="loader" className="animate-pulse space-y-6">
               <div className="h-8 w-1/3 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -307,7 +307,7 @@ export default function CreatePostPage() {
                     value={selectedCommunity}
                     onValueChange={setSelectedCommunity}
                   >
-                    <SelectTrigger className="w-full border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200">
+                    <SelectTrigger className="w-full border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors duration-200" data-testid="community-select">
                       <SelectValue placeholder="Select a community" />
                     </SelectTrigger>
                     <SelectContent>
@@ -365,6 +365,7 @@ export default function CreatePostPage() {
                       onChange={handleTitleChange}
                       placeholder="Give your post a title"
                       required
+                      data-testid="emoji-title-input"
                     />
                   </div>
 
@@ -375,6 +376,7 @@ export default function CreatePostPage() {
                         content={formData.content}
                         onChange={(content) => setFormData(prev => ({ ...prev, content }))}
                         placeholder="Write your post content here..."
+                        data-testid="rich-text-editor"
                       />
                     </div>
                   </TabsContent>
