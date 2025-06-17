@@ -95,11 +95,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   useEffect(() => {
     if (error) {
       console.log('Login error occurred:', error);
+      
+      let errorMessage = 'An error occurred during login';
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data?.message) {
+        // Handle error message from response data
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        // Handle error object from response data
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        // Handle error message from error object
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Login Failed',
-        description: error || 'An error occurred during login',
+        description: errorMessage,
         variant: 'destructive',
       });
+      
       dispatch(clearError());
     }
   }, [error, toast, dispatch]);

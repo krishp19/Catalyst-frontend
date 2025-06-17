@@ -65,7 +65,9 @@ export const loginUser = createAsyncThunk<LoginResponse, LoginData, { rejectValu
       console.error('Login error:', error);
       if (error.response) {
         // Server responded with an error
-        const errorMessage = error.response.data?.message || 'Invalid credentials';
+        const errorMessage = error.response.data?.message || 
+                            error.response.data?.error || 
+                            'Invalid credentials';
         return rejectWithValue(errorMessage);
       } else if (error.request) {
         // Request was made but no response was received
