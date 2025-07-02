@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,6 +25,7 @@ import {
 } from '../ui/form';
 import { Input } from '../ui/input';
 import { Loader2 } from 'lucide-react';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 const loginSchema = z.object({
   usernameOrEmail: z.string().min(1, { message: 'Username or email is required' }),
@@ -51,6 +52,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const { isLoading, error } = useAppSelector((state: any) => state.auth);
   
   const [isOpen, setIsOpen] = React.useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(true);
   
   // Handle both controlled and uncontrolled open state
   const isControlled = externalOpen !== undefined;
@@ -134,6 +137,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
       form.reset();
+      setShowForgotPassword(false);
     }
     setOpen(newOpen);
   }, [form, setOpen]);
@@ -148,7 +152,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={isLoginModalOpen && open} onOpenChange={handleOpenChange}>
       <DialogContent 
         className="sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg"
         onInteractOutside={(e: any) => e.preventDefault()}
@@ -194,7 +198,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </FormLabel>
                       <button 
                         type="button" 
-                        className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        className="text-xs text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowForgotPassword(true);
+                        }}
                       >
                         Forgot password?
                       </button>
@@ -254,6 +262,36 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
       </DialogContent>
+      
+      <ForgotPasswordModal
+        open={showForgotPassword}
+        onOpenChange={(open) => {
+          setShowForgotPassword(open);
+          setIsLoginModalOpen(!open);
+          
+          if (!open) {
+            // When closing forgot password, show login modal again
+            setIsLoginModalOpen(true);
+            // Small delay to ensure smooth transition
+            setTimeout(() => {
+              const usernameInput = document.querySelector('input[name="usernameOrEmail"]') as HTMLInputElement;
+              usernameInput?.focus();
+            }, 100);
+          } else {
+            // When opening forgot password, hide login modal
+            setIsLoginModalOpen(false);
+          }
+        }}
+        onLoginClick={() => {
+          setShowForgotPassword(false);
+          setIsLoginModalOpen(true);
+          // Focus back to login form after a small delay
+          setTimeout(() => {
+            const emailInput = document.querySelector('input[name="usernameOrEmail"]') as HTMLInputElement;
+            emailInput?.focus();
+          }, 100);
+        }}
+      />
     </Dialog>
   );
 };

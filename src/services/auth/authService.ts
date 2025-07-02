@@ -55,6 +55,21 @@ export interface UpdateProfileData {
   email?: string;
 }
 
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface VerifyPasswordResetOtpData {
+  email: string;
+  otp: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
 export const authService = {
   async signup(data: SignupData): Promise<ApiResponse<AuthResponse>> {
     try {
@@ -132,13 +147,58 @@ export const authService = {
 
   async updateProfile(data: UpdateProfileData): Promise<ApiResponse<User>> {
     try {
-      const response = await httpClient.patch<User>('/users/profile', data);
+      const response = await httpClient.patch<User>('/auth/me', data);
       return { data: response.data };
     } catch (error: any) {
       console.error('Update profile error:', error);
       return {
         error: {
-          message: error.message || 'Failed to update profile',
+          message: error.response?.data?.message || error.message || 'Failed to update profile',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async forgotPassword(data: ForgotPasswordData): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await httpClient.post<{ message: string }>('/auth/forgot-password', data);
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      return {
+        error: {
+          message: error.response?.data?.message || error.message || 'Failed to process password reset request',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async verifyPasswordResetOtp(data: VerifyPasswordResetOtpData): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await httpClient.post<{ message: string }>('/auth/verify-password-reset-otp', data);
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Verify OTP error:', error);
+      return {
+        error: {
+          message: error.response?.data?.message || error.message || 'Failed to verify OTP',
+          status: error.response?.status,
+        },
+      };
+    }
+  },
+
+  async resetPassword(data: ResetPasswordData): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await httpClient.post<{ message: string }>('/auth/reset-password', data);
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      return {
+        error: {
+          message: error.response?.data?.message || error.message || 'Failed to reset password',
           status: error.response?.status,
         },
       };
