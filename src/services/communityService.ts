@@ -61,7 +61,14 @@ class CommunityService {
     bannerUrl?: string | null;
     topics?: string[];
   }): Promise<Community> {
-    const response = await httpClient.post(this.baseUrl, communityData);
+    // Map topics to topicIds to match backend DTO
+    const { topics, ...rest } = communityData;
+    const requestData = {
+      ...rest,
+      topicIds: topics
+    };
+    
+    const response = await httpClient.post(this.baseUrl, requestData);
     return response.data;
   }
 
