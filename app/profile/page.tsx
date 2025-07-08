@@ -108,10 +108,7 @@ const ProfilePage = () => {
   const [postsLoading, setPostsLoading] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // Helper function to safely get community name
-  const getCommunityName = (post: { community?: { name: string } | null; communityId: string }): string => {
-    return post.community?.name || post.communityId || 'unknown';
-  };
+
   
   // Helper function to safely get post community info
   const getPostCommunityInfo = (post: { community?: { name: string } | null; communityId?: string }): string => {
@@ -160,17 +157,7 @@ const ProfilePage = () => {
     fetchProfile();
   }, []);
 
-  const renderContentType = (content: string | null) => {
-    if (!content) return null;
-    
-    // Check if content is a URL
-    try {
-      const url = new URL(content);
-      return url.href;
-    } catch (e) {
-      return content;
-    }
-  };
+
 
   const handleProfileUpdate = (updatedProfile: ExtendedUser) => {
     setProfile(updatedProfile);
